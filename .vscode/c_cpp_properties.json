@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "ESP-IDF",
+            "compilerPath": "H:\\esp32_sdk\\.espressif\\tools\\xtensa-esp32s3-elf\\esp-12.2.0_20230208\\xtensa-esp32s3-elf\\bin\\xtensa-esp32s3-elf-gcc.exe",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "H:/esp32_sdk/esp-idf/components/**"
+            ],
+            "browse": {
+                "path": [
+                    "${config:idf.espIdfPath}/components",
+                    "${config:idf.espIdfPathWin}/components",
+                    "${config:idf.espAdfPath}/components/**",
+                    "${config:idf.espAdfPathWin}/components/**",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
+}
