@@ -3,6 +3,8 @@
 #include "settings_scene.h"
 #include "app_config.h"
 
+#include "mui_icons.h"
+
 enum settings_main_menu_t
 {
     SETTINGS_MAIN_MENU_BACK,
@@ -24,7 +26,7 @@ void settings_scene_main_on_enter(void *user_data)
 {
     app_settings_t *app = user_data;
     mui_list_view_add_item(app->p_list_view, 0xe1c7, "系统版本 [1.0.0]", (void *)NULL);
-    mui_list_view_add_item(app->p_list_view, 0xe1f0, "返回", (void *)SETTINGS_MAIN_MENU_BACK);
+    mui_list_view_add_item(app->p_list_view, ICON_HOME, "返回", (void *)SETTINGS_MAIN_MENU_BACK);
 
     mui_list_view_set_selected_cb(app->p_list_view, settings_scene_main_list_view_on_selected);
 

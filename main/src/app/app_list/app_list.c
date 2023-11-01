@@ -8,6 +8,8 @@
 
 #include "app_control_bar.h"
 
+#include "mui_icons.h"
+
 static uint16_t force = 0;
 static uint32_t offset = 0;
 
@@ -56,7 +58,7 @@ void app_list_on_run(mini_app_inst_t *p_app_inst)
         }
     }
 
-    mui_list_view_add_item(p_app_handle->p_list_view, 0xe1f0, "返回主页", MINI_APP_ID_DESKTOP);
+    mui_list_view_add_item(p_app_handle->p_list_view, ICON_HOME, "返回主页", MINI_APP_ID_DESKTOP);
 
     mui_list_view_set_focus(p_app_handle->p_list_view, force);
     p_app_handle->p_list_view->scroll_offset = offset;

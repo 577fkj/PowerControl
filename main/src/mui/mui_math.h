@@ -24,9 +24,9 @@ extern "C"
 #define LV_TRIGO_SIN_MAX 32768
 #define LV_TRIGO_SHIFT 15 /**<  >> LV_TRIGO_SHIFT to normalize*/
 
-#define LV_BEZIER_VAL_SHIFT 10                                    /**< log2(LV_BEZIER_VAL_MAX): used to normalize up scaled values*/
-#define LV_BEZIER_VAL_MAX (1L << LV_BEZIER_VAL_SHIFT)             /**< Max time in Bezier functions (not [0..1] to use integers)*/
-#define LV_BEZIER_VAL_FLOAT(f) ((int32_t)((f)*LV_BEZIER_VAL_MAX)) /**< Convert const float number cubic-bezier values to fix-point value*/
+#define LV_BEZIER_VAL_SHIFT 10                                      /**< log2(LV_BEZIER_VAL_MAX): used to normalize up scaled values*/
+#define LV_BEZIER_VAL_MAX (1L << LV_BEZIER_VAL_SHIFT)               /**< Max time in Bezier functions (not [0..1] to use integers)*/
+#define LV_BEZIER_VAL_FLOAT(f) ((int32_t)((f) * LV_BEZIER_VAL_MAX)) /**< Convert const float number cubic-bezier values to fix-point value*/
 
 #define LV_ATTRIBUTE_FAST_MEM
 #define LV_UNUSED
@@ -152,7 +152,7 @@ extern "C"
 #define LV_CLAMP(min, val, max) (LV_MAX(min, (LV_MIN(val, max))))
 
 #define LV_ABS(x) ((x) > 0 ? (x) : (-(x)))
-#define LV_UDIV255(x) (((x)*0x8081U) >> 0x17)
+#define LV_UDIV255(x) (((x) * 0x8081U) >> 0x17)
 
 #define LV_IS_SIGNED(t) (((t)(-1)) < ((t)0))
 #define LV_UMAX_OF(t) (((0x1ULL << ((sizeof(t) * 8ULL) - 1ULL)) - 1ULL) | (0xFULL << ((sizeof(t) * 8ULL) - 4ULL)))

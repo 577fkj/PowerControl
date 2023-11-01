@@ -8,6 +8,8 @@
 
 #include "desktop_view.h"
 
+#include "mui_icons.h"
+
 typedef enum
 {
     DESKTOP_VIEW_ID_MAIN
@@ -60,7 +62,7 @@ void app_desktop_on_event(mini_app_inst_t *p_app_inst, mini_app_event_t *p_event
 
 const mini_app_t app_desktop_info = {.id = MINI_APP_ID_DESKTOP,
                                      .name = "desktop",
-                                     .icon = 0xe1f0,
+                                     .icon = ICON_HOME,
                                      .deamon = false,
                                      .sys = true,
                                      .hide = true,

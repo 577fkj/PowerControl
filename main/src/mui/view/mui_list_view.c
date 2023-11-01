@@ -9,27 +9,33 @@
 #define LIST_ANIM_SHORT_TIME 150
 #define LIST_ANIM_LONG_TIME 300
 
-static bool mui_list_view_anim_enabled() { return true; }
+static bool mui_list_view_anim_enabled()
+{
+    return true;
+}
 
 static uint16_t mui_list_view_get_utf8_width(const char *str) { return u8g2_GetUTF8Width(&(mui()->u8g2), str); }
 
 static void mui_list_view_start_text_anim(mui_list_view_t *p_view)
 {
-    mui_list_item_t *p_item = mui_list_item_array_get(p_view->items, p_view->focus_index);
-    uint32_t focus_text_width = mui_list_view_get_utf8_width(string_get_cstr(p_item->text));
-    if (focus_text_width > p_view->canvas_width - 13)
+    if (mui_list_view_anim_enabled())
     {
-        p_view->text_offset = 0;
-        int32_t overflowed_width = focus_text_width - p_view->canvas_width + 20;
-        mui_anim_set_time(&p_view->text_anim, overflowed_width * 100);
-        mui_anim_set_values(&p_view->text_anim, 0, -overflowed_width);
-        mui_anim_set_auto_restart(&p_view->text_anim, true);
-        mui_anim_start(&p_view->text_anim);
-    }
-    else
-    {
-        p_view->text_offset = 0;
-        mui_anim_stop(&p_view->text_anim);
+        mui_list_item_t *p_item = mui_list_item_array_get(p_view->items, p_view->focus_index);
+        uint32_t focus_text_width = mui_list_view_get_utf8_width(string_get_cstr(p_item->text));
+        if (focus_text_width > p_view->canvas_width - 13)
+        {
+            p_view->text_offset = 0;
+            int32_t overflowed_width = focus_text_width - p_view->canvas_width + 20;
+            mui_anim_set_time(&p_view->text_anim, overflowed_width * 100);
+            mui_anim_set_values(&p_view->text_anim, 0, -overflowed_width);
+            mui_anim_set_auto_restart(&p_view->text_anim, true);
+            mui_anim_start(&p_view->text_anim);
+        }
+        else
+        {
+            p_view->text_offset = 0;
+            mui_anim_stop(&p_view->text_anim);
+        }
     }
 }
 
@@ -69,26 +75,25 @@ static void mui_list_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
     {
         mui_list_item_t *item = mui_list_item_array_ref(it);
         int32_t y = index * LIST_ITEM_HEIGHT - offset_y;
-        int8_t text_offset = index == p_mui_list_view->focus_index ? p_mui_list_view->text_offset : 0;
+        int32_t text_offset = index == p_mui_list_view->focus_index ? p_mui_list_view->text_offset : 0;
         if (y >= -LIST_ITEM_HEIGHT && y <= mui_canvas_get_height(p_canvas))
         { // visible object
-            int8_t x_offset = 3;
-            if (item->icon != 0x00)
+            int offset_x = 4;
+            if (item->icon != 0)
             {
                 mui_canvas_set_font(p_canvas, u8g2_font_siji_t_6x10);
-                mui_canvas_draw_glyph(p_canvas, 2, y + 10, item->icon);
-                x_offset = 15;
+                mui_canvas_draw_glyph(p_canvas, 0, y + 10, item->icon);
+                offset_x = 13;
             }
 
             mui_canvas_set_font(p_canvas, u8g2_font_wqy12_t_gb2312a);
             mui_canvas_get_clip_window(p_canvas, &clip_win_prev);
-            // clip_win_cur.x = x_offset;
-            // clip_win_cur.y = y;
-            // clip_win_cur.h = LIST_ITEM_HEIGHT;
-            // clip_win_cur.w = mui_canvas_get_width(p_canvas);
-            // mui_canvas_set_clip_window(p_canvas, &clip_win_cur);
-            mui_canvas_draw_utf8_clip(p_canvas, x_offset + text_offset, y + 10, string_get_cstr(item->text));
-            // mui_canvas_set_clip_window(p_canvas, &clip_win_prev);
+            clip_win_cur.x = offset_x;
+            clip_win_cur.y = y;
+            clip_win_cur.h = LIST_ITEM_HEIGHT, clip_win_cur.w = mui_canvas_get_width(p_canvas);
+            mui_canvas_set_clip_window(p_canvas, &clip_win_cur);
+            mui_canvas_draw_utf8_clip(p_canvas, offset_x + text_offset, y + 10, string_get_cstr(item->text));
+            mui_canvas_set_clip_window(p_canvas, &clip_win_prev);
         }
 
         mui_list_item_array_next(it);
@@ -117,7 +122,7 @@ static void mui_list_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
 static void mui_list_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
 {
     mui_list_view_t *p_mui_list_view = p_view->user_data;
-    if (event->type == INPUT_TYPE_SHORT || event->type == INPUT_TYPE_REPEAT || INPUT_TYPE_LONG)
+    if (event->type == INPUT_TYPE_SHORT || event->type == INPUT_TYPE_REPEAT || event->type == INPUT_TYPE_LONG)
     {
         switch (event->key)
         {

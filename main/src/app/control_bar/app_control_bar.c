@@ -8,6 +8,8 @@
 #include "mini_app_launcher.h"
 #include "mini_app_registry.h"
 
+#include "mui_icons.h"
+
 typedef enum
 {
     CONTROL_BAR_VIEW_ID_MAIN
@@ -66,7 +68,7 @@ void app_control_bar_set_draw(void *user_data, control_bar_draw_cb_t draw)
 
 const mini_app_t app_control_bar_info = {.id = MINI_APP_ID_CONTROL_BAR,
                                          .name = "control bar",
-                                         .icon = 0xe1f0,
+                                         .icon = ICON_HOME,
                                          .deamon = true,
                                          .sys = true,
                                          .hide = true,

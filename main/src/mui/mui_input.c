@@ -71,5 +71,4 @@ void mui_input_on_bsp_btn_event(uint8_t btn, bsp_btn_event_t evt)
 void mui_input_init()
 {
     bsp_btn_init(mui_input_on_bsp_btn_event);
-    // TODO
 }

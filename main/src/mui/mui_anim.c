@@ -230,7 +230,7 @@ void mui_anim_core_init()
     esp_timer_create_args_t data_timer = {
         .callback = &mui_anim_tick_tmr_cb, // 定时器回调函数
         .arg = NULL,                       // 传递给回调函数的参数
-        .name = "anim_tick_timer",         // 定时器名称
+        .name = "mui_anim_tick_timer",     // 定时器名称
     };
 
     esp_err_t err_code = esp_timer_create(&data_timer, &m_anim_tick_tmr);
@@ -282,8 +282,6 @@ void mui_anim_stop(mui_anim_t *p_anim)
     {
         m_anim_tmr_started = false;
         esp_err_t err_code = esp_timer_stop(m_anim_tick_tmr);
-        ESP_ERROR_CHECK(err_code);
-        err_code = esp_timer_delete(m_anim_tick_tmr);
         ESP_ERROR_CHECK(err_code);
     }
 }

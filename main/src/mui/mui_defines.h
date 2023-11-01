@@ -9,9 +9,6 @@
 #define MUI_EVENT_ID_INPUT 1
 #define MUI_EVENT_ID_ANIM 2
 
-#define MUI_EVENT_ID_VIEW_ENTER 2
-#define MUI_EVENT_ID VIEW_EXIT 3
-
 #define mui_check(__e)                             \
     do                                             \
     {                                              \
