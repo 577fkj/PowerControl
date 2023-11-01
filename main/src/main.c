@@ -77,11 +77,7 @@ void app_main(void)
 
     gpio_reset_pin(LED_GPIO_PIN);
     gpio_set_direction(LED_GPIO_PIN, GPIO_MODE_OUTPUT); // 输出
-    gpio_set_level(LED_GPIO_PIN, 0);
-
-    gpio_reset_pin(LED2_GPIO_PIN);
-    gpio_set_direction(LED2_GPIO_PIN, GPIO_MODE_OUTPUT); // 输出
-    gpio_set_level(LED2_GPIO_PIN, 0);
+    gpio_set_level(LED_GPIO_PIN, 1);
 
     // 定时器结构体初始化
     esp_timer_create_args_t data_timer = {

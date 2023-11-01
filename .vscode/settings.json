@@ -11,7 +11,7 @@
     "idf.openOcdConfigs": [
         "board/esp32s3-builtin.cfg"
     ],
-    "idf.portWin": "COM5",
+    "idf.portWin": "COM6",
     "idf.pythonBinPathWin": "H:\\esp32_sdk\\.espressif\\python_env\\idf5.1_py3.11_env\\Scripts\\python.exe",
     "idf.toolsPathWin": "H:\\esp32_sdk\\.espressif",
     "idf.flashType": "JTAG",
