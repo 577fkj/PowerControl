@@ -19,7 +19,7 @@ bool m_toast_timer_initialized = false;
 
 static void mui_toast_timer_handler(void *p_context)
 {
-    mui_toast_view_t *p_toast_view = (mui_toast_view_t *)p_context;
+    mui_toast_view_t *p_toast_view = (mui_toast_view_t *)m_toast_timer_arg;
     p_toast_view->is_visible = false;
     m_toast_timer_arg = NULL;
     mui_update(mui());
@@ -31,6 +31,7 @@ static void mui_toast_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
     const char *msg = string_get_cstr(p_toast_view->message);
     if (p_toast_view->is_visible && string_size(p_toast_view->message) > 0)
     {
+        mui_canvas_set_font(p_canvas, p_toast_view->u8g2_font);
         uint8_t mw = mui_canvas_get_width(p_canvas) - 16;
         uint8_t th = mui_element_text_height(p_canvas, mw, msg);
         uint8_t tw = mui_canvas_get_utf8_width(p_canvas, msg);
@@ -81,6 +82,7 @@ mui_toast_view_t *mui_toast_view_create()
     p_view->exit_cb = mui_toast_view_on_exit;
 
     p_toast_view->p_view = p_view;
+    p_toast_view->u8g2_font = u8g2_font_wqy12_t_gb2312a;
 
     string_init(p_toast_view->message);
 
@@ -104,7 +106,8 @@ void mui_toast_view_free(mui_toast_view_t *p_view)
 {
     m_toast_timer_arg = NULL;
     esp_err_t err_code = esp_timer_stop(m_toast_timer_id);
-    ESP_ERROR_CHECK(err_code);
+    if (err_code != ESP_ERR_INVALID_STATE)
+        ESP_ERROR_CHECK(err_code);
     err_code = esp_timer_delete(m_toast_timer_id);
     ESP_ERROR_CHECK(err_code);
 
@@ -113,7 +116,10 @@ void mui_toast_view_free(mui_toast_view_t *p_view)
     mui_mem_free(p_view);
 }
 
-mui_view_t *mui_toast_view_get_view(mui_toast_view_t *p_view) { return p_view->p_view; }
+mui_view_t *mui_toast_view_get_view(mui_toast_view_t *p_view)
+{
+    return p_view->p_view;
+}
 
 void mui_toast_view_show(mui_toast_view_t *p_view, const char *message)
 {
@@ -122,6 +128,7 @@ void mui_toast_view_show(mui_toast_view_t *p_view, const char *message)
 
     m_toast_timer_arg = p_view;
     esp_err_t err_code = esp_timer_stop(m_toast_timer_id);
-    ESP_ERROR_CHECK(err_code);
+    if (err_code != ESP_ERR_INVALID_STATE)
+        ESP_ERROR_CHECK(err_code);
     err_code = esp_timer_start_once(m_toast_timer_id, MUI_TOAST_DISPLAY_TIME * 1000);
 }
