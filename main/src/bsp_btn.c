@@ -17,6 +17,8 @@
 
 #include "mui_input.h"
 
+#include "utils.h"
+
 #define BSP_BUTTON_LONG_PUSH_TIME_MS 1000
 #define BSP_BUTTON_REPEAT_PUSH_TIMEOUT_MS 200
 
@@ -68,61 +70,31 @@ static uint8_t bsp_button_pin_to_index(uint8_t pin_no)
     case UP_KEY:
         if (m_bsp_btns[0].m_bsp_button_long_push_tmr == NULL)
         {
-            esp_timer_create_args_t m_bsp_button_long_push_tmr = {
-                .callback = &button_long_push_timer_handler, // 定时器回调函数
-                .arg = UP_KEY,                               // 传递给回调函数的参数
-                .name = "up_bsp_button_long_push_tmr",       // 定时器名称
-            };
-            esp_timer_create(&m_bsp_button_long_push_tmr, &m_bsp_btns[0].m_bsp_button_long_push_tmr);
+            create_timer_with_handle(&m_bsp_btns[0].m_bsp_button_long_push_tmr, up_bsp_button_long_push_tmr, &button_long_push_timer_handler, UP_KEY)
         }
         if (m_bsp_btns[0].m_bsp_button_repeat_push_tmr == NULL)
         {
-            esp_timer_create_args_t m_bsp_button_repeat_push_tmr = {
-                .callback = &button_repeat_push_timer_handler, // 定时器回调函数
-                .arg = UP_KEY,                                 // 传递给回调函数的参数
-                .name = "up_bsp_button_repeat_push_tmr",       // 定时器名称
-            };
-            esp_timer_create(&m_bsp_button_repeat_push_tmr, &m_bsp_btns[0].m_bsp_button_repeat_push_tmr);
+            create_timer_with_handle(&m_bsp_btns[0].m_bsp_button_repeat_push_tmr, up_bsp_button_repeat_push_tmr, &button_repeat_push_timer_handler, UP_KEY)
         }
         return 0;
     case CENTER_KEY:
         if (m_bsp_btns[1].m_bsp_button_long_push_tmr == NULL)
         {
-            esp_timer_create_args_t m_bsp_button_long_push_tmr = {
-                .callback = &button_long_push_timer_handler, // 定时器回调函数
-                .arg = CENTER_KEY,                           // 传递给回调函数的参数
-                .name = "center_bsp_button_long_push_tmr",   // 定时器名称
-            };
-            esp_timer_create(&m_bsp_button_long_push_tmr, &m_bsp_btns[1].m_bsp_button_long_push_tmr);
+            create_timer_with_handle(&m_bsp_btns[1].m_bsp_button_long_push_tmr, center_bsp_button_long_push_tmr, &button_long_push_timer_handler, CENTER_KEY)
         }
         if (m_bsp_btns[1].m_bsp_button_repeat_push_tmr == NULL)
         {
-            esp_timer_create_args_t m_bsp_button_repeat_push_tmr = {
-                .callback = &button_repeat_push_timer_handler, // 定时器回调函数
-                .arg = CENTER_KEY,                             // 传递给回调函数的参数
-                .name = "center_bsp_button_repeat_push_tmr",   // 定时器名称
-            };
-            esp_timer_create(&m_bsp_button_repeat_push_tmr, &m_bsp_btns[1].m_bsp_button_repeat_push_tmr);
+            create_timer_with_handle(&m_bsp_btns[1].m_bsp_button_repeat_push_tmr, center_bsp_button_repeat_push_tmr, &button_repeat_push_timer_handler, CENTER_KEY)
         }
         return 1;
     case DOWN_KEY:
         if (m_bsp_btns[2].m_bsp_button_long_push_tmr == NULL)
         {
-            esp_timer_create_args_t m_bsp_button_long_push_tmr = {
-                .callback = &button_long_push_timer_handler, // 定时器回调函数
-                .arg = DOWN_KEY,                             // 传递给回调函数的参数
-                .name = "down_bsp_button_long_push_tmr",     // 定时器名称
-            };
-            esp_timer_create(&m_bsp_button_long_push_tmr, &m_bsp_btns[2].m_bsp_button_long_push_tmr);
+            create_timer_with_handle(&m_bsp_btns[2].m_bsp_button_long_push_tmr, down_bsp_button_long_push_tmr, &button_long_push_timer_handler, DOWN_KEY)
         }
         if (m_bsp_btns[2].m_bsp_button_repeat_push_tmr == NULL)
         {
-            esp_timer_create_args_t m_bsp_button_repeat_push_tmr = {
-                .callback = &button_repeat_push_timer_handler, // 定时器回调函数
-                .arg = DOWN_KEY,                               // 传递给回调函数的参数
-                .name = "down_bsp_button_repeat_push_tmr",     // 定时器名称
-            };
-            esp_timer_create(&m_bsp_button_repeat_push_tmr, &m_bsp_btns[2].m_bsp_button_repeat_push_tmr);
+            create_timer_with_handle(&m_bsp_btns[2].m_bsp_button_repeat_push_tmr, down_bsp_button_repeat_push_tmr, &button_repeat_push_timer_handler, DOWN_KEY)
         }
         return 2;
     default:

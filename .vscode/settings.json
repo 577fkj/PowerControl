@@ -11,11 +11,12 @@
     "idf.openOcdConfigs": [
         "board/esp32s3-builtin.cfg"
     ],
-    "idf.portWin": "COM6",
+    "idf.portWin": "COM3",
     "idf.pythonBinPathWin": "H:\\esp32_sdk\\.espressif\\python_env\\idf5.1_py3.11_env\\Scripts\\python.exe",
     "idf.toolsPathWin": "H:\\esp32_sdk\\.espressif",
     "idf.flashType": "JTAG",
     "files.associations": {
+        "*.embeddedhtml": "html",
         "freertos.h": "c",
         "twai.h": "c",
         "utils.h": "c",
@@ -92,7 +93,13 @@
         "app_config.h": "c",
         "settings_scene.h": "c",
         "settings_offset_scene.h": "c",
-        "settings_offset_scene_config.h": "c"
+        "settings_offset_scene_config.h": "c",
+        "mui_toast_view.h": "c",
+        "ble_service.h": "c",
+        "stdio.h": "c",
+        "df_buffer.h": "c",
+        "protobuf-c.h": "c",
+        "ostream": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

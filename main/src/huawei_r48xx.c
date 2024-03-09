@@ -5,6 +5,7 @@
 #include "mui_include.h"
 #include "app_module_info.h"
 #include "app_config.h"
+#include "ble_service.h"
 
 RectifierParameters power_data = {
     0,
@@ -109,6 +110,8 @@ void set_power(float p, bool callback)
 
 void can_data_handle(uint32_t can_id, uint8_t *can_data)
 {
+    power_data.power_connected = true;
+
     ConfigStruct *config = get_config();
     HuaweiEAddr h_data = {0};
     HuaweiEAddr_unpack(&h_data, can_id);
@@ -124,7 +127,7 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         power_data.output_current = unpack_uint16_big_endian(can_data + 6) / config->offset_current;
         if (h_data.fromSrc == 0x00)
         {
-            power_data.amp_hour += power_data.output_current * 0.377;
+            power_data.amp_hour += power_data.output_current * 0.377; // 377ms
         }
     }
     break;
@@ -295,7 +298,7 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         uint8_t error = can_data[0] & 0x20;
         uint8_t mode = can_data[1];
         uint32_t val = unpack_uint32_big_endian(can_data + 4);
-        // app_ble_set_callback(mode, error, can_data, 8);
+        app_ble_set_callback(mode, error, can_data, 8);
         switch (mode)
         {
         case 0x00: // 设置在线电压

@@ -11,6 +11,8 @@
 #include "driver/gptimer.h"
 #include "esp_timer.h"
 
+#include "utils.h"
+
 #define MUI_TOAST_DISPLAY_TIME 2000
 
 esp_timer_handle_t m_toast_timer_id;
@@ -88,15 +90,8 @@ mui_toast_view_t *mui_toast_view_create()
 
     if (!m_toast_timer_initialized)
     {
-        // 定时器结构体初始化
-        esp_timer_create_args_t data_timer = {
-            .callback = &mui_toast_timer_handler, // 定时器回调函数
-            .arg = NULL,                          // 传递给回调函数的参数
-            .name = "mui_toast_timer",            // 定时器名称
-        };
-
-        esp_err_t err_code = esp_timer_create(&data_timer, &m_toast_timer_id);
-        ESP_ERROR_CHECK(err_code);
+        create_timer_with_handle(&m_toast_timer_id, mui_toast, &mui_toast_timer_handler, NULL);
+        ESP_ERROR_CHECK(timer_mui_toast_err);
         m_toast_timer_initialized = true;
     }
 
@@ -106,6 +101,7 @@ void mui_toast_view_free(mui_toast_view_t *p_view)
 {
     m_toast_timer_arg = NULL;
     esp_err_t err_code = esp_timer_stop(m_toast_timer_id);
+    m_toast_timer_initialized = false;
     if (err_code != ESP_ERR_INVALID_STATE)
         ESP_ERROR_CHECK(err_code);
     err_code = esp_timer_delete(m_toast_timer_id);

@@ -14,6 +14,8 @@
 
 #include "app_config.h"
 
+#include "utils.h"
+
 typedef enum
 {
     OUTPUT_INFO_VIEW_ID_MAIN
@@ -110,18 +112,7 @@ void app_output_info_on_run(mini_app_inst_t *p_app_inst)
     mui_view_dispatcher_attach(p_app_handle->p_view_dispatcher, MUI_LAYER_WINDOW);
     mui_view_dispatcher_switch_to_view(p_app_handle->p_view_dispatcher, OUTPUT_INFO_VIEW_ID_MAIN);
 
-    // 定时器结构体初始化
-    esp_timer_create_args_t data_timer = {
-        .callback = &app_output_info_on_draw, // 定时器回调函数
-        .arg = p_app_handle->p_list_view,     // 传递给回调函数的参数
-        .name = "update_timer",               // 定时器名称
-    };
-
-    /**
-     * 创建定时器
-     *     返回值为定时器句柄，用于后续对定时器进行其他操作。
-     */
-    esp_timer_create(&data_timer, &p_app_handle->data_timer_handle);
+    create_timer_with_handle(&p_app_handle->data_timer_handle, update, &app_output_info_on_draw, p_app_handle->p_list_view);
     // 启动定时器 以循环方式启动定时器
     esp_timer_start_periodic(p_app_handle->data_timer_handle, 500000); // us级定时，500ms
 }

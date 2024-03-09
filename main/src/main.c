@@ -25,8 +25,10 @@
 #include "huawei_r48xx.h"
 #include "can.h"
 #include "ble.h"
+#include "ble_service.h"
 #include "oled_u8g2.h"
 #include "u8g2.h"
+#include "utils.h"
 
 #include "mui_core.h"
 #include "mini_app_launcher.h"
@@ -42,16 +44,24 @@ int tick_count = 0;
 void r48xx_tick()
 {
     send_get_data();
-    if (tick_count == 10)
+
+    tick_count++;
+    ConfigStruct *config = get_config();
+    switch (tick_count)
     {
-        ConfigStruct *config = get_config();
+    case 10:
         set_voltage(config->set_voltage, false, true);
         set_current(config->set_current, false, true);
         tick_count = 0;
-    }
-    else
-    {
-        tick_count++;
+        break;
+    case 3:
+    case 6:
+    case 9:
+        power_data.power_connected = false;
+        break;
+
+    default:
+        break;
     }
 }
 
@@ -74,27 +84,15 @@ void app_main(void)
     ble_init();
     can_init();
     init_key();
+    init_ble_service();
 
     gpio_reset_pin(LED_GPIO_PIN);
     gpio_set_direction(LED_GPIO_PIN, GPIO_MODE_OUTPUT); // 输出
     gpio_set_level(LED_GPIO_PIN, 1);
 
-    // 定时器结构体初始化
-    esp_timer_create_args_t data_timer = {
-        .callback = &r48xx_tick, // 定时器回调函数
-        .arg = NULL,             // 传递给回调函数的参数
-        .name = "data_timer",    // 定时器名称
-    };
-
-    esp_timer_handle_t data_timer_handle = 0; // 定时器句柄
-
-    /**
-     * 创建定时器
-     *     返回值为定时器句柄，用于后续对定时器进行其他操作。
-     */
-    esp_err_t err = esp_timer_create(&data_timer, &data_timer_handle);
+    create_timer(data, &r48xx_tick, NULL);
     // 启动定时器 以循环方式启动定时器
-    err = esp_timer_start_periodic(data_timer_handle, 1000000); // us级定时，1s
+    esp_err_t err = esp_timer_start_periodic(data_timer_handle, 1000000); // us级定时，1s
     if (err == ESP_OK)
     {
         printf("ok!\r\n");

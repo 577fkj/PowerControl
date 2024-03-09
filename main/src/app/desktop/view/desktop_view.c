@@ -13,6 +13,8 @@
 #include "mini_app_registry.h"
 #include "mini_app_launcher.h"
 
+#include "utils.h"
+
 bool time_tick = false;
 bool set_tick = false;
 static int timer = 0;
@@ -285,14 +287,7 @@ desktop_view_t *desktop_view_create()
 
     printf("create desktop view\r\n");
 
-    // 定时器结构体初始化
-    esp_timer_create_args_t desktop_data_timer = {
-        .callback = &desktop_tick_timer_callback, // 定时器回调函数
-        .arg = NULL,                              // 传递给回调函数的参数
-        .name = "desktop_tick_timer",             // 定时器名称
-    };
-
-    esp_timer_create(&desktop_data_timer, &p_desktop_view->data_timer_handle);
+    create_timer_with_handle(&p_desktop_view->data_timer_handle, desktop_data, &desktop_tick_timer_callback, NULL);
     esp_timer_start_periodic(p_desktop_view->data_timer_handle, 500000); // us级定时，500ms
 
     return p_desktop_view;

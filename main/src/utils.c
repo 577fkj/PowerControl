@@ -3,22 +3,32 @@
 #include "huawei_r48xx.h"
 #include "driver/twai.h"
 
+#define USE_GCC_BSWAP_FUNCTIONS 1
+
 uint16_t unpack_uint16_big_endian(const uint8_t *data)
 {
+#if USE_GCC_BSWAP_FUNCTIONS
+    return __builtin_bswap16(*(uint16_t *)data);
+#else
     uint16_t result = 0;
     result |= ((uint16_t)data[0]) << 8;
     result |= ((uint16_t)data[1]) << 0;
     return result;
+#endif
 }
 
 uint32_t unpack_uint32_big_endian(const uint8_t *data)
 {
+#if USE_GCC_BSWAP_FUNCTIONS
+    return __builtin_bswap32(*(uint32_t *)data);
+#else
     uint32_t result = 0;
     result |= ((uint32_t)data[0]) << 24;
     result |= ((uint32_t)data[1]) << 16;
     result |= ((uint32_t)data[2]) << 8;
     result |= ((uint32_t)data[3]) << 0;
     return result;
+#endif
 }
 
 // 将一个浮点数转换为字符串
@@ -115,6 +125,12 @@ uint32_t unpack_uint32_big_endian(const uint8_t *data)
 //     }
 // }
 
+/*
+ * @brief: 打印16进制数据
+ * @param: data：数据
+ * @param: size：数据长度
+ * @return: void
+ */
 void hexdump(const void *data, uint16_t size)
 {
     printf("\n");
@@ -276,6 +292,12 @@ uint16_t get_temperature_valut(uint32_t adc)
     return (uint16_t)(ntc_value * 10);
 }
 
+/*
+ * @brief: 将CAN数据包打印出来
+ * @param: flag：0-send 1-receive
+ * @param: msg：CAN数据包
+ * @return: void
+ */
 void printf_can_msg(int flag, twai_message_t *msg) // flag：0-send 1-receive
 {
     int j;

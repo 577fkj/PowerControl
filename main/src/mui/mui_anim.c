@@ -8,6 +8,8 @@
 #include "driver/gptimer.h"
 #include "esp_timer.h"
 
+#include "utils.h"
+
 #define LV_ANIM_RESOLUTION 1024
 #define LV_ANIM_RES_SHIFT 10
 
@@ -226,15 +228,8 @@ static mui_anim_t *mui_anim_remove_ptr(mui_anim_t *p_anim)
 
 void mui_anim_core_init()
 {
-    // 定时器结构体初始化
-    esp_timer_create_args_t data_timer = {
-        .callback = &mui_anim_tick_tmr_cb, // 定时器回调函数
-        .arg = NULL,                       // 传递给回调函数的参数
-        .name = "mui_anim_tick_timer",     // 定时器名称
-    };
-
-    esp_err_t err_code = esp_timer_create(&data_timer, &m_anim_tick_tmr);
-    ESP_ERROR_CHECK(err_code);
+    create_timer_with_handle(&m_anim_tick_tmr, mui_anim_tick, &mui_anim_tick_tmr_cb, NULL);
+    ESP_ERROR_CHECK(timer_mui_anim_tick_err);
 }
 
 void mui_anim_core_event(mui_event_t *p_event)

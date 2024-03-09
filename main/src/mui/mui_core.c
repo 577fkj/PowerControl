@@ -87,7 +87,7 @@ static void mui_process_redraw(mui_t *p_mui, mui_event_t *p_event)
     if (mui_draw_layer(p_mui, MUI_LAYER_DESKTOP, LAYER_CONTROL_BAR_WIDTH, 0, sw - LAYER_CONTROL_BAR_WIDTH, sh))
     {
         mui_draw_layer(p_mui, MUI_LAYER_CONTROL_BAR, 0, 0, LAYER_CONTROL_BAR_WIDTH, sh);
-        mui_draw_layer(p_mui, MUI_LAYER_TOAST, LAYER_CONTROL_BAR_WIDTH, 0, sw - LAYER_CONTROL_BAR_WIDTH, sh);
+        mui_draw_layer(p_mui, MUI_LAYER_TOAST, 0, 0, sw, sh);
         mui_buffer_flush(p_mui);
         return;
     }
@@ -235,6 +235,7 @@ void mui_add_view_port(mui_t *p_mui, mui_view_port_t *p_vp, mui_layer_t layer)
 }
 void mui_remove_view_port(mui_t *p_mui, mui_view_port_t *p_vp, mui_layer_t layer)
 {
+    printf("remove %d\n", layer);
     mui_view_port_array_it_t it;
     for (size_t i = 0; i < MUI_LAYER_MAX; i++)
     {

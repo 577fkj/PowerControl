@@ -48,6 +48,7 @@ typedef struct
     bool output_status;
     bool ready_status;
     bool power_status;
+    bool power_connected;
 } RectifierParameters;
 
 // typedef struct

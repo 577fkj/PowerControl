@@ -4,6 +4,21 @@
 #include <stdint.h>
 #include "huawei_r48xx.h"
 
+#define create_timer(timer, callback_, user_data) \
+    esp_timer_create_args_t timer##_args = {      \
+        .callback = (callback_),                  \
+        .arg = (user_data),                       \
+        .name = #timer "_timer"};                 \
+    esp_timer_handle_t timer##_timer_handle = 0;  \
+    esp_err_t timer_##timer##_err = esp_timer_create(&timer##_args, &timer##_timer_handle);
+
+#define create_timer_with_handle(handle, timer, callback_, user_data) \
+    esp_timer_create_args_t timer##_args = {                          \
+        .callback = (callback_),                                      \
+        .arg = (user_data),                                           \
+        .name = #timer "_timer"};                                     \
+    esp_err_t timer_##timer##_err = esp_timer_create(&timer##_args, handle);
+
 static uint16_t NTC_Table[165][3] = {
     {186, 200, -40},   // 0
     {196, 211, -39},   // 1

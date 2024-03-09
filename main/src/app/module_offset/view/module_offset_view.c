@@ -10,6 +10,8 @@
 #include "driver/gptimer.h"
 #include "esp_timer.h"
 
+#include "utils.h"
+
 uint8_t count = 0;
 
 static void app_list_control_view_on_draw(void *user_data, mui_canvas_t *p_canvas)
@@ -182,12 +184,7 @@ module_offset_view_t *module_offset_view_create()
 
     count = 0;
 
-    esp_timer_create_args_t fw_timer = {
-        .callback = &mui_update, // 定时器回调函数
-        .arg = mui(),            // 传递给回调函数的参数
-        .name = "mui_tick",      // 定时器名称
-    };
-    esp_timer_create(&fw_timer, &p_module_offset_view->timer);
+    create_timer_with_handle(&p_module_offset_view->timer, update_mui, &mui_update, mui());
     esp_timer_start_periodic(p_module_offset_view->timer, 500000);
 
     mui_view_t *p_view = mui_view_create();
