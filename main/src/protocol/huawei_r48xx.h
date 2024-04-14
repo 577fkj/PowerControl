@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "power_protocol.h"
+
 // Cmdid
 #define HUAWEI_R48XX_PROTOCOL_ID 0x21
 #define HUAWEI_R48XX_MSG_CONTROL_ID 0x80
@@ -31,42 +33,30 @@ typedef struct
 
 typedef struct
 {
-    float input_voltage;
-    float input_current;
-    float input_frequency;
-    float input_power;
-    float input_temp;
-    float output_voltage;
-    float output_current;
-    float max_output_current;
-    float output_temp;
-    float output_power;
-    float efficiency;
-    float current_limit;
-    float amp_hour;
-    int32_t run_hour;
-    bool output_status;
-    bool ready_status;
-    bool power_status;
-    bool power_connected;
-} RectifierParameters;
+    // 输入
+    float input_voltage;   // 输入电压
+    float input_current;   // 输入电流
+    float input_frequency; // 输入频率
+    float input_power;     // 输入功率
+    float input_temp;      // 温度
 
-// typedef struct
-// {
-//     char input_power[10];
-//     char input_frequency[10];
-//     char input_current[10];
-//     char output_power[10];
-//     char efficiency[10];
-//     char output_voltage[10];
-//     char max_output_voltage[10];
-//     char max_output_current[10];
-//     char input_voltage[10];
-//     char output_temp[10];
-//     char input_temp[10];
-//     char output_current[10];
-//     char amp_hour[10];
-// } RectifierParametersStringData;
+    // 输出
+    float output_voltage;     // 输出电压
+    float output_current;     // 输出电流
+    float max_output_current; // 最大输出电流
+    float output_temp;        // 温度
+    float output_power;       // 输出功率
+
+    // 其他
+    float efficiency;     // 效率
+    float current_limit;  // 电流限制
+    float amp_hour;       // 每秒充电量 使用时要处以 3600
+    int32_t run_hour;     // 总运行时间
+    bool output_status;   // 输出状态
+    bool ready_status;    // 就绪状态
+    bool power_status;    // 电源状态
+    bool power_connected; // 电源连接状态
+} RectifierParameters;
 
 typedef struct
 {
@@ -86,6 +76,8 @@ typedef struct
 extern RectifierParameters power_data;
 // extern RectifierParametersStringData power_data_string;
 extern RectifierInfo power_info;
+
+extern power_protocol_app_t huawei_r48xx_info;
 
 void HuaweiEAddr_init(HuaweiEAddr *self, uint8_t protoId, uint8_t addr, uint8_t cmdId, uint8_t fromSrc, uint8_t rev, uint8_t count);
 // char *HuaweiEAddr_to_string(const HuaweiEAddr *self);

@@ -353,3 +353,30 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         break;
     }
 }
+
+void init_power_protocol()
+{
+}
+
+void set_status(bool status)
+{
+    if (status)
+    {
+        power_on(true);
+    }
+    else
+    {
+        power_off(true);
+    }
+}
+
+power_protocol_app_t power_protocol_num = {
+    .name = "Huawei r48xx",
+    .can_data_handle = can_data_handle,
+    .init = init_power_protocol,
+    .set_status = set_status,
+    .set_current = set_current,
+    .set_voltage = set_voltage,
+    .set_power = set_power,
+    .get_info = send_get_info,
+};

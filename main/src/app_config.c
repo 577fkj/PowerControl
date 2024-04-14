@@ -62,7 +62,7 @@ void config_init()
 
         config->other_offset = 1024.0;
 
-        strcpy(config->ble_name, "HWPower");
+        strcpy(config->ble_name, "PowerControl");
 
         save_config(config);
     }

@@ -99,7 +99,12 @@
         "stdio.h": "c",
         "df_buffer.h": "c",
         "protobuf-c.h": "c",
-        "ostream": "c"
+        "ostream": "c",
+        "random": "c",
+        "fstream": "c",
+        "istream": "c",
+        "utility": "c",
+        "*.inc": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
