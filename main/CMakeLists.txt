@@ -9,5 +9,5 @@ endforeach()
 # Add source and header directories to the component
 idf_component_register(
     SRCS ${C_DIRS}
-    INCLUDE_DIRS "mlib" ${INCLUDE_DIRS}
+    INCLUDE_DIRS "../components/mlib" ${INCLUDE_DIRS}
 )
