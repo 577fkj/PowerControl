@@ -1,5 +1,4 @@
 #include "mui_canvas.h"
-#include <string.h>
 
 void mui_canvas_flush(mui_canvas_t *p_canvas) { u8g2_SendBuffer(p_canvas->fb); }
 
@@ -86,6 +85,44 @@ uint8_t mui_canvas_draw_glyph(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint
     return u8g2_DrawGlyph(p_canvas->fb, x, y, encoding);
 }
 
+uint16_t mui_canvas_draw_utf8_truncate(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint8_t max_width, const char *str)
+{
+    char *p = str;
+    char utf8[5];
+
+    if (max_width < mui_canvas_get_utf8_width(p_canvas, str))
+    {
+        while (*p != 0)
+        {
+            uint8_t utf8_size = mui_canvas_get_utf8_bytes(p);
+            memcpy(utf8, p, utf8_size);
+            utf8[utf8_size] = '\0';
+            if (x >= 0 && x <= max_width - 8)
+            {
+                uint8_t utf8_w = mui_canvas_draw_utf8(p_canvas, x, y, utf8);
+                x += utf8_w;
+            }
+            else
+            {
+                uint8_t *font = u8g2_GetFont(p_canvas->fb);
+                u8g2_SetFont(p_canvas->fb, u8g2_font_siji_t_6x10);
+                uint8_t utf8_w = mui_canvas_draw_glyph(p_canvas, x, y - 1, 0xe21f);
+                u8g2_SetFont(p_canvas->fb, font);
+                x += utf8_w + 1;
+
+                break;
+            }
+            p += utf8_size;
+        }
+    }
+    else
+    {
+        x = mui_canvas_draw_utf8(p_canvas, x, y, str) + 1;
+    }
+
+    return x;
+}
+
 uint16_t mui_canvas_get_utf8_width(mui_canvas_t *p_canvas, const char *s) { return u8g2_GetUTF8Width(p_canvas->fb, s); }
 
 void mui_canvas_set_frame(mui_canvas_t *p_canvas, uint8_t offset_x, uint8_t offset_y, uint8_t width, uint8_t height)
@@ -110,6 +147,7 @@ void mui_canvas_set_clip_window(mui_canvas_t *p_canvas, mui_rect_t *p_rect)
                        p_rect->x + p_rect->w, p_rect->y + p_rect->w);
 }
 
+uint8_t mui_canvas_get_draw_color(mui_canvas_t *p_canvas) { return u8g2_GetDrawColor(p_canvas->fb); }
 void mui_canvas_set_draw_color(mui_canvas_t *p_canvas, uint8_t color) { u8g2_SetDrawColor(p_canvas->fb, color); }
 
 void mui_canvas_draw_box(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint8_t w, uint8_t h)
@@ -117,6 +155,13 @@ void mui_canvas_draw_box(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint8_t w
     x += p_canvas->offset_x;
     y += p_canvas->offset_y;
     u8g2_DrawBox(p_canvas->fb, x, y, w, h);
+}
+
+void mui_canvas_draw_rbox(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t radius)
+{
+    x += p_canvas->offset_x;
+    y += p_canvas->offset_y;
+    u8g2_DrawRBox(p_canvas->fb, x, y, w, h, radius);
 }
 
 void mui_canvas_draw_dot(mui_canvas_t *p_canvas, uint8_t x, uint8_t y)
@@ -134,11 +179,19 @@ void mui_canvas_draw_rframe(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint8_
     u8g2_DrawRFrame(p_canvas->fb, x, y, width, height, radius);
 }
 
-void mui_canvas_draw_xbm(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint8_t *bitmap)
+void mui_canvas_draw_xbm(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint8_t width, uint8_t height, const uint8_t *bitmap)
 {
     x += p_canvas->offset_x;
     y += p_canvas->offset_y;
     u8g2_DrawXBM(p_canvas->fb, x, y, width, height, bitmap);
+}
+
+void mui_canvas_draw_bitmap(mui_canvas_t *p_canvas, uint8_t x, uint8_t y, uint8_t width, uint8_t height,
+                            const uint8_t *bitmap)
+{
+    x += p_canvas->offset_x;
+    y += p_canvas->offset_y;
+    u8g2_DrawBitmap(p_canvas->fb, x, y, width, height, bitmap);
 }
 
 uint16_t mui_canvas_string_width(mui_canvas_t *p_canvas, const char *str)

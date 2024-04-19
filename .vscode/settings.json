@@ -107,7 +107,8 @@
         "*.inc": "c",
         "m-dict.h": "c",
         "gptimer.h": "c",
-        "power_protocol.h": "c"
+        "power_protocol.h": "c",
+        "initializer_list": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

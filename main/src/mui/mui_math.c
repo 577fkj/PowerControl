@@ -16,11 +16,11 @@
  *      TYPEDEFS
  **********************/
 
-#define CUBIC_NEWTON_ITERATIONS     8
-#define CUBIC_PRECISION_BITS        10 /* 10 or 14 bits recommended, int64_t calculation is used for >14bit precision */
+#define CUBIC_NEWTON_ITERATIONS 8
+#define CUBIC_PRECISION_BITS 10 /* 10 or 14 bits recommended, int64_t calculation is used for >14bit precision */
 
 #if CUBIC_PRECISION_BITS < 10 || CUBIC_PRECISION_BITS > 20
-    #error "cubic precision bits should be in range of [10, 20] for 32bit/64bit calculations."
+#error "cubic precision bits should be in range of [10, 20] for 32bit/64bit calculations."
 #endif
 
 /**********************
@@ -31,13 +31,12 @@
  *  STATIC VARIABLES
  **********************/
 static const uint16_t sin0_90_table[] = {
-    0,     572,   1144,  1715,  2286,  2856,  3425,  3993,  4560,  5126,  5690,  6252,  6813,  7371,  7927,  8481,
-    9032,  9580,  10126, 10668, 11207, 11743, 12275, 12803, 13328, 13848, 14365, 14876, 15384, 15886, 16384, 16877,
+    0, 572, 1144, 1715, 2286, 2856, 3425, 3993, 4560, 5126, 5690, 6252, 6813, 7371, 7927, 8481,
+    9032, 9580, 10126, 10668, 11207, 11743, 12275, 12803, 13328, 13848, 14365, 14876, 15384, 15886, 16384, 16877,
     17364, 17847, 18324, 18795, 19261, 19720, 20174, 20622, 21063, 21498, 21926, 22348, 22763, 23170, 23571, 23965,
     24351, 24730, 25102, 25466, 25822, 26170, 26510, 26842, 27166, 27482, 27789, 28088, 28378, 28660, 28932, 29197,
     29452, 29698, 29935, 30163, 30382, 30592, 30792, 30983, 31164, 31336, 31499, 31651, 31795, 31928, 32052, 32166,
-    32270, 32365, 32449, 32524, 32588, 32643, 32688, 32723, 32748, 32763, 32768
-};
+    32270, 32365, 32449, 32524, 32588, 32643, 32688, 32723, 32748, 32763, 32768};
 
 /**********************
  *      MACROS
@@ -55,28 +54,37 @@ static const uint16_t sin0_90_table[] = {
 LV_ATTRIBUTE_FAST_MEM int32_t lv_trigo_sin(int16_t angle)
 {
     int32_t ret = 0;
-    while(angle < 0) angle += 360;
-    while(angle >= 360) angle -= 360;
+    while (angle < 0)
+        angle += 360;
+    while (angle >= 360)
+        angle -= 360;
 
-    if(angle < 90) {
+    if (angle < 90)
+    {
         ret = sin0_90_table[angle];
     }
-    else if(angle >= 90 && angle < 180) {
+    else if (angle >= 90 && angle < 180)
+    {
         angle = 180 - angle;
-        ret   = sin0_90_table[angle];
+        ret = sin0_90_table[angle];
     }
-    else if(angle >= 180 && angle < 270) {
+    else if (angle >= 180 && angle < 270)
+    {
         angle = angle - 180;
-        ret   = -sin0_90_table[angle];
+        ret = -sin0_90_table[angle];
     }
-    else {   /*angle >=270*/
+    else
+    { /*angle >=270*/
         angle = 360 - angle;
-        ret   = -sin0_90_table[angle];
+        ret = -sin0_90_table[angle];
     }
 
-    if(ret == 32767) return 32768;
-    else if(ret == -32767) return -32768;
-    else return ret;
+    if (ret == 32767)
+        return 32768;
+    else if (ret == -32767)
+        return -32768;
+    else
+        return ret;
 }
 
 /**
@@ -138,17 +146,18 @@ static int32_t do_cubic_bezier(int32_t t, int32_t a, int32_t b, int32_t c)
 int32_t lv_cubic_bezier(int32_t x, int32_t x1, int32_t y1, int32_t x2, int32_t y2)
 {
     int32_t ax, bx, cx, ay, by, cy;
-    int32_t tl, tr, t;  /*t in cubic-bezier function, used for bisection */
-    int32_t xs;  /*x sampled on curve */
+    int32_t tl, tr, t; /*t in cubic-bezier function, used for bisection */
+    int32_t xs;        /*x sampled on curve */
 #if CUBIC_PRECISION_BITS > 14
     int64_t d; /*slope value at specified t*/
 #else
     int32_t d;
 #endif
 
-    if(x == 0 || x == LV_BEZIER_VAL_MAX) return x;
+    if (x == 0 || x == LV_BEZIER_VAL_MAX)
+        return x;
 
-    /* input is always LV_BEZIER_VAL_SHIFT bit precision */
+        /* input is always LV_BEZIER_VAL_SHIFT bit precision */
 
 #if CUBIC_PRECISION_BITS != LV_BEZIER_VAL_SHIFT
     x <<= CUBIC_PRECISION_BITS - LV_BEZIER_VAL_SHIFT;
@@ -164,14 +173,16 @@ int32_t lv_cubic_bezier(int32_t x, int32_t x1, int32_t y1, int32_t x2, int32_t y
 
     cy = 3 * y1;
     by = 3 * (y2 - y1) - cy;
-    ay = (1L << CUBIC_PRECISION_BITS)  - cy - by;
+    ay = (1L << CUBIC_PRECISION_BITS) - cy - by;
 
     /*Try Newton's method firstly */
     t = x; /*Make a guess*/
-    for(int i = 0; i < CUBIC_NEWTON_ITERATIONS; i++) {
+    for (int i = 0; i < CUBIC_NEWTON_ITERATIONS; i++)
+    {
         /*Check if x on curve at t matches input x*/
         xs = do_cubic_bezier(t, ax, bx, cx) - x;
-        if(LV_ABS(xs) <= 1) goto found;
+        if (LV_ABS(xs) <= 1)
+            goto found;
 
         /* get slop at t, d = 3 * ax * t^2 + 2 * bx + t + cx */
         d = ax; /* use 64bit operation if needed. */
@@ -179,32 +190,39 @@ int32_t lv_cubic_bezier(int32_t x, int32_t x1, int32_t y1, int32_t x2, int32_t y
         d = ((d + 2 * bx) * t) >> CUBIC_PRECISION_BITS;
         d += cx;
 
-        if(LV_ABS(d) <= 1) break;
+        if (LV_ABS(d) <= 1)
+            break;
 
         d = ((int64_t)xs * (1L << CUBIC_PRECISION_BITS)) / d;
-        if(d == 0) break;  /*Reached precision limits*/
+        if (d == 0)
+            break; /*Reached precision limits*/
         t -= d;
     }
 
     /*Fallback to bisection method for reliability*/
     tl = 0, tr = 1L << CUBIC_PRECISION_BITS, t = x;
 
-    if(t < tl) {
+    if (t < tl)
+    {
         t = tl;
         goto found;
     }
 
-    if(t > tr) {
+    if (t > tr)
+    {
         t = tr;
         goto found;
     }
 
-    while(tl < tr) {
+    while (tl < tr)
+    {
         xs = do_cubic_bezier(t, ax, bx, cx);
-        if(LV_ABS(xs - x) <= 1) goto found;
+        if (LV_ABS(xs - x) <= 1)
+            goto found;
         x > xs ? (tl = t) : (tr = t);
         t = (tr - tl) / 2 + tl;
-        if(t == tl) break;
+        if (t == tl)
+            break;
     }
 
     /*Failed to find suitable t for given x, return a value anyway.*/
@@ -227,18 +245,20 @@ found:
  * If root < 256: mask = 0x800
  * Else: mask = 0x8000
  */
-LV_ATTRIBUTE_FAST_MEM void lv_sqrt(uint32_t x, lv_sqrt_res_t * q, uint32_t mask)
+LV_ATTRIBUTE_FAST_MEM void lv_sqrt(uint32_t x, lv_sqrt_res_t *q, uint32_t mask)
 {
     x = x << 8; /*To get 4 bit precision. (sqrt(256) = 16 = 4 bit)*/
 
     uint32_t root = 0;
     uint32_t trial;
     // http://ww1.microchip.com/...en/AppNotes/91040a.pdf
-    do {
+    do
+    {
         trial = root + mask;
-        if(trial * trial <= x) root = trial;
+        if (trial * trial <= x)
+            root = trial;
         mask = mask >> 1;
-    } while(mask);
+    } while (mask);
 
     q->i = root >> 4;
     q->f = (root & 0xf) << 4;
@@ -265,62 +285,79 @@ uint16_t lv_atan2(int x, int y)
     unsigned char negflag;
     unsigned char tempdegree;
     unsigned char comp;
-    unsigned int degree;     // this will hold the result
+    unsigned int degree; // this will hold the result
     unsigned int ux;
     unsigned int uy;
 
     // Save the sign flags then remove signs and get XY as unsigned ints
     negflag = 0;
-    if(x < 0) {
-        negflag += 0x01;    // x flag bit
-        x = (0 - x);        // is now +
+    if (x < 0)
+    {
+        negflag += 0x01; // x flag bit
+        x = (0 - x);     // is now +
     }
-    ux = x;                // copy to unsigned var before multiply
-    if(y < 0) {
-        negflag += 0x02;    // y flag bit
-        y = (0 - y);        // is now +
+    ux = x; // copy to unsigned var before multiply
+    if (y < 0)
+    {
+        negflag += 0x02; // y flag bit
+        y = (0 - y);     // is now +
     }
-    uy = y;                // copy to unsigned var before multiply
+    uy = y; // copy to unsigned var before multiply
 
     // 1. Calc the scaled "degrees"
-    if(ux > uy) {
-        degree = (uy * 45) / ux;   // degree result will be 0-45 range
-        negflag += 0x10;    // octant flag bit
+    if (ux > uy)
+    {
+        degree = (uy * 45) / ux; // degree result will be 0-45 range
+        negflag += 0x10;         // octant flag bit
     }
-    else {
-        degree = (ux * 45) / uy;   // degree result will be 0-45 range
+    else
+    {
+        degree = (ux * 45) / uy; // degree result will be 0-45 range
     }
 
     // 2. Compensate for the 4 degree error curve
     comp = 0;
-    tempdegree = degree;    // use an unsigned char for speed!
-    if(tempdegree > 22) {    // if top half of range
-        if(tempdegree <= 44) comp++;
-        if(tempdegree <= 41) comp++;
-        if(tempdegree <= 37) comp++;
-        if(tempdegree <= 32) comp++;  // max is 4 degrees compensated
+    tempdegree = degree; // use an unsigned char for speed!
+    if (tempdegree > 22)
+    { // if top half of range
+        if (tempdegree <= 44)
+            comp++;
+        if (tempdegree <= 41)
+            comp++;
+        if (tempdegree <= 37)
+            comp++;
+        if (tempdegree <= 32)
+            comp++; // max is 4 degrees compensated
     }
-    else {   // else is lower half of range
-        if(tempdegree >= 2) comp++;
-        if(tempdegree >= 6) comp++;
-        if(tempdegree >= 10) comp++;
-        if(tempdegree >= 15) comp++;  // max is 4 degrees compensated
+    else
+    { // else is lower half of range
+        if (tempdegree >= 2)
+            comp++;
+        if (tempdegree >= 6)
+            comp++;
+        if (tempdegree >= 10)
+            comp++;
+        if (tempdegree >= 15)
+            comp++; // max is 4 degrees compensated
     }
-    degree += comp;   // degree is now accurate to +/- 1 degree!
+    degree += comp; // degree is now accurate to +/- 1 degree!
 
     // Invert degree if it was X>Y octant, makes 0-45 into 90-45
-    if(negflag & 0x10) degree = (90 - degree);
+    if (negflag & 0x10)
+        degree = (90 - degree);
 
     // 3. Degree is now 0-90 range for this quadrant,
     // need to invert it for whichever quadrant it was in
-    if(negflag & 0x02) { // if -Y
-        if(negflag & 0x01)   // if -Y -X
+    if (negflag & 0x02)
+    {                       // if -Y
+        if (negflag & 0x01) // if -Y -X
             degree = (180 + degree);
-        else        // else is -Y +X
+        else // else is -Y +X
             degree = (180 - degree);
     }
-    else {   // else is +Y
-        if(negflag & 0x01)   // if +Y -X
+    else
+    {                       // else is +Y
+        if (negflag & 0x01) // if +Y -X
             degree = (360 - degree);
     }
     return degree;
@@ -335,8 +372,9 @@ uint16_t lv_atan2(int x, int y)
 int64_t lv_pow(int64_t base, int8_t exp)
 {
     int64_t result = 1;
-    while(exp) {
-        if(exp & 1)
+    while (exp)
+    {
+        if (exp & 1)
             result *= base;
         exp >>= 1;
         base *= base;
@@ -356,11 +394,15 @@ int64_t lv_pow(int64_t base, int8_t exp)
  */
 int32_t lv_map(int32_t x, int32_t min_in, int32_t max_in, int32_t min_out, int32_t max_out)
 {
-    if(max_in >= min_in && x >= max_in) return max_out;
-    if(max_in >= min_in && x <= min_in) return min_out;
+    if (max_in >= min_in && x >= max_in)
+        return max_out;
+    if (max_in >= min_in && x <= min_in)
+        return min_out;
 
-    if(max_in <= min_in && x <= max_in) return max_out;
-    if(max_in <= min_in && x >= min_in) return min_out;
+    if (max_in <= min_in && x <= max_in)
+        return max_out;
+    if (max_in <= min_in && x >= min_in)
+        return min_out;
 
     /**
      * The equation should be:

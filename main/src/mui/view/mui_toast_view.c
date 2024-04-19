@@ -3,10 +3,6 @@
 //
 
 #include "mui_toast_view.h"
-#include "mui_core.h"
-#include "mui_element.h"
-#include "mui_math.h"
-#include "string.h"
 
 #include "driver/gptimer.h"
 #include "esp_timer.h"
@@ -16,14 +12,12 @@
 #define MUI_TOAST_DISPLAY_TIME 2000
 
 esp_timer_handle_t m_toast_timer_id;
-void *m_toast_timer_arg = NULL;
 bool m_toast_timer_initialized = false;
 
 static void mui_toast_timer_handler(void *p_context)
 {
-    mui_toast_view_t *p_toast_view = (mui_toast_view_t *)m_toast_timer_arg;
+    mui_toast_view_t *p_toast_view = (mui_toast_view_t *)p_context;
     p_toast_view->is_visible = false;
-    m_toast_timer_arg = NULL;
     mui_update(mui());
 }
 
@@ -31,9 +25,9 @@ static void mui_toast_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
 {
     mui_toast_view_t *p_toast_view = (mui_toast_view_t *)p_view->user_data;
     const char *msg = string_get_cstr(p_toast_view->message);
+    mui_canvas_set_font(p_canvas, u8g2_font_wqy12_t_gb2312a);
     if (p_toast_view->is_visible && string_size(p_toast_view->message) > 0)
     {
-        mui_canvas_set_font(p_canvas, p_toast_view->u8g2_font);
         uint8_t mw = mui_canvas_get_width(p_canvas) - 16;
         uint8_t th = mui_element_text_height(p_canvas, mw, msg);
         uint8_t tw = mui_canvas_get_utf8_width(p_canvas, msg);
@@ -84,7 +78,6 @@ mui_toast_view_t *mui_toast_view_create()
     p_view->exit_cb = mui_toast_view_on_exit;
 
     p_toast_view->p_view = p_view;
-    p_toast_view->u8g2_font = u8g2_font_wqy12_t_gb2312a;
 
     string_init(p_toast_view->message);
 
@@ -99,7 +92,6 @@ mui_toast_view_t *mui_toast_view_create()
 }
 void mui_toast_view_free(mui_toast_view_t *p_view)
 {
-    m_toast_timer_arg = NULL;
     esp_err_t err_code = esp_timer_stop(m_toast_timer_id);
     m_toast_timer_initialized = false;
     if (err_code != ESP_ERR_INVALID_STATE)
@@ -112,17 +104,12 @@ void mui_toast_view_free(mui_toast_view_t *p_view)
     mui_mem_free(p_view);
 }
 
-mui_view_t *mui_toast_view_get_view(mui_toast_view_t *p_view)
-{
-    return p_view->p_view;
-}
+mui_view_t *mui_toast_view_get_view(mui_toast_view_t *p_view) { return p_view->p_view; }
 
 void mui_toast_view_show(mui_toast_view_t *p_view, const char *message)
 {
     string_set_str(p_view->message, message);
     p_view->is_visible = true;
-
-    m_toast_timer_arg = p_view;
     esp_err_t err_code = esp_timer_stop(m_toast_timer_id);
     if (err_code != ESP_ERR_INVALID_STATE)
         ESP_ERROR_CHECK(err_code);

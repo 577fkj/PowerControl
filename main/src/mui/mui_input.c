@@ -1,6 +1,6 @@
 #include "mui_input.h"
+
 #include "mui_core.h"
-#include "mui_defines.h"
 #include "mui_event.h"
 #include "bsp_btn.h"
 

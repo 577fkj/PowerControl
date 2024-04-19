@@ -2,7 +2,7 @@
 #define MUI_CONF_H
 
 #define MUI_MEM_USE_TLSF
-#define MUI_MEM_BUFF_SIZE 24 * 1024
+#define MUI_MEM_BUFF_SIZE 16 * 1024
 
 // #define MUI_MEM_DRAW_USAGE
 
