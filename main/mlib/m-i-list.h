@@ -1,7 +1,7 @@
 /*
  * M*LIB - Intrusive List module
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -63,7 +63,7 @@
   M_END_PROTECTED_CODE
 
 
-/* Define the oplist of a doubly-linked instrusive list of type.
+/* Define the oplist of a doubly-linked intrusive list of type.
    USAGE:
      ILIST_OPLIST(name [, oplist_of_the_type]) */
 #define M_ILIST_OPLIST(...)                                                   \
@@ -100,7 +100,7 @@ typedef struct m_il1st_head_s {
    INIT_MOVE(M_F(name, _init_move)),                                          \
    MOVE(M_F(name, _move)),                                                    \
    NAME(name),                                                                \
-   TYPE(M_F(name,_ct)),                                                       \
+   TYPE(M_F(name,_ct)), GENTYPE(struct M_F(name,_s)*),                        \
    RESET(M_F(name,_reset)),                                                   \
    SUBTYPE(M_F(name,_subtype_ct)),                                            \
    EMPTY_P(M_F(name,_empty_p)),                                               \
@@ -234,7 +234,7 @@ typedef struct m_il1st_head_s {
   {                                                                           \
     /* Nothing to do more than clean the list itself */                       \
     M_F(name, _reset)(list);                                                  \
-    /* For safety purpose (create invalid represenation of object) */         \
+    /* For safety purpose (create invalid representation of object) */        \
     list->name.next = NULL;                                                   \
     list->name.prev = NULL;                                                   \
   }                                                                           \

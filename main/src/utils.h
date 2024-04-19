@@ -2,7 +2,10 @@
 #define __UTILS_H
 
 #include <stdint.h>
-#include "huawei_r48xx.h"
+// #include "huawei_r48xx.h"
+
+#define US2MS(us) ((us) / 1000)
+#define MS2US(ms) ((ms) * 1000)
 
 #define create_timer(timer, callback_, user_data) \
     esp_timer_create_args_t timer##_args = {      \

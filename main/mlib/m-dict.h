@@ -1,7 +1,7 @@
 /*
  * M*LIB - DICTIONARY Module
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -55,7 +55,7 @@
   M_END_PROTECTED_CODE
 
 
-/* Define a dictionary asssociating the key key_type to the value value_type and its associated functions.
+/* Define a dictionary associating the key key_type to the value value_type and its associated functions.
    It stores the computed hash value, avoiding the need of recomputing it but increasing memory
    consumption.
    USAGE:
@@ -67,7 +67,7 @@
   M_DICT_STOREHASH_DEF2_AS(name, M_F(name,_t), M_F(name,_it_t), M_F(name,_itref_t), key_type, __VA_ARGS__)
 
 
-/* Define a dictionary asssociating the key key_type to the value value_type and its associated functions.
+/* Define a dictionary associating the key key_type to the value value_type and its associated functions.
    as the given name name_t with its associated functions.
    It stores the computed hash value, avoiding the need of recomputing it but increasing memory
    consumption.
@@ -157,7 +157,7 @@
   M_END_PROTECTED_CODE
 
 
-/* Define the oplist of a dictionnary (DICT_DEF2, DICT_STOREHASH_DEF2 or DICT_OA_DEF2).
+/* Define the oplist of a dictionary (DICT_DEF2, DICT_STOREHASH_DEF2 or DICT_OA_DEF2).
    USAGE:
      DICT_OPLIST(name, oplist of the key type, oplist of the value type)
    OR
@@ -169,7 +169,7 @@
    M_D1CT_OPLIST_P1((__VA_ARGS__ )))
 
 
-/* Define the oplist of a dictionnary (DICT_SET_DEF).
+/* Define the oplist of a dictionary (DICT_SET_DEF).
    USAGE: DICT_SET_OPLIST(name[, oplist of the key type]) */
 #define M_DICT_SET_OPLIST(...)                                                \
   M_IF_NARGS_EQ1(__VA_ARGS__)                                                 \
@@ -218,7 +218,7 @@
    It is defined as an array of singly linked list (each list
    representing a bucket).
 */
-/* Defered evaluation for arg */
+/* Deferred evaluation for arg */
 #define M_D1CT_SHASH_DEF2_P1(arg) M_ID( M_D1CT_SHASH_DEF2_P2 arg )
 
 /* Validate the key oplist before going further */
@@ -271,7 +271,7 @@
 
 
 
-/* Define the structure of a chained dictionnary for all kind of dictionaries
+/* Define the structure of a chained dictionary for all kind of dictionaries
  * name: prefix of the container,
  * key_type: type of the key
  * key_oplist: oplist of the key
@@ -282,7 +282,7 @@
  * isSet: is the container a SET (=1) or a MAP (=0)
  * isStoreHash: is the computed hash stored in the bucker (=1) or not (=0)
  * dict_t: name of the type to construct
- * dict_it_t: name of the iterator within the dictionnary.
+ * dict_it_t: name of the iterator within the dictionary.
  * it_deref_t: name of the type returned by an iterator
 */
 #define M_D1CT_FUNC_DEF2_P5(name, key_type, key_oplist, value_type, value_oplist, pair_type, pair_oplist, isSet, isStoreHash, dict_t, dict_it_t, it_deref_t) \
@@ -458,7 +458,7 @@
       M_MEMORY_FULL((size_t)-1);                                              \
     }                                                                         \
     M_ASSERT (old_size > 1 && new_size > 1);                                  \
-    /* Resize the table of the dictionnary */                                 \
+    /* Resize the table of the dictionary */                                  \
     M_F(name, _array_list_pair_resize)(map->table, new_size);                 \
     /* Move the items to the new upper part */                                \
     for(size_t i = 0; i < old_size; i++) {                                    \
@@ -706,8 +706,8 @@
   M_D1CT_FUNC_ADDITIONAL_DEF2(name, key_type, key_oplist, value_type, value_oplist, isSet, dict_t, dict_it_t, it_deref_t)
 
 
-/* Define additional functions for dictionnary (Common for all kinds of dictionnary).
-   Do not used any specific fields of the dictionnary but the public API
+/* Define additional functions for dictionary (Common for all kinds of dictionary).
+   Do not used any specific fields of the dictionary but the public API
 
    It is not possible to define a method for IT_REMOVE: we could easily define it
    by performing an _erase of the key get by the _cref method. However,
@@ -716,19 +716,19 @@
    dict may perform a resize down operation, reducing the size of the array,
    base of the dict, by two. This operation renders the computation of the
    'next' element impossible as the order of the elements in the dict
-   has fundamentaly changed in this case. We could detect this and restart
+   has fundamentally changed in this case. We could detect this and restart
    the iteration from the first element, but it wouldn't fit the contract
    of the IT_REMOVE operator.
 
-   HASH method for dictionnary itself seems hard to implement:
-   we have to handle the case where two dictionaries are structuraly
-   different, but functionnaly identical (seems they have the same
+   HASH method for dictionary itself seems hard to implement:
+   we have to handle the case where two dictionaries are structurally
+   different, but functionally identical (seems they have the same
    members, but put in a different order).
    We cannot iterator over the dictionary to compute a hash, as the
-   order of the items in the dictionnary is not specified: they more
+   order of the items in the dictionary is not specified: they more
    or less follow the hash of the keys, but if the low bits of the
    hash of the key is equal, they order may be different.
-   Or if the table of the dictionnary has different values (this may
+   Or if the table of the dictionary has different values (this may
    be avoided).
  */
 #define M_D1CT_FUNC_ADDITIONAL_DEF2(name, key_type, key_oplist, value_type, value_oplist, isSet, dict_t, dict_it_t, it_deref_t) \
@@ -836,42 +836,35 @@
   {                                                                           \
     M_ASSERT (str != NULL);                                                   \
     M_F(name, _reset)(dict);                                                  \
-    bool success = false;                                                     \
     int c = m_core_str_nospace(&str);                                         \
-    if (M_UNLIKELY (c != '{')) { goto exit; }                                 \
+    if (M_UNLIKELY (c != '{')) { c = 0; goto exit; }                          \
     c = m_core_str_nospace(&str);                                             \
-    if (M_UNLIKELY (c == '}')) { success = true; goto exit;}                  \
-    if (M_UNLIKELY (c == 0))   { goto exit; }                                 \
+    if (M_UNLIKELY (c == '}' || c == 0)) goto exit;                           \
     str--;                                                                    \
-    key_type key;                                                             \
-    M_IF(isSet)( ,value_type value);                                          \
-    M_CALL_INIT(key_oplist, key);                                             \
-    M_IF(isSet)( , M_CALL_INIT(value_oplist, value) );                        \
-    do {                                                                      \
-      c = m_core_str_nospace(&str);                                           \
-      str--;                                                                  \
-      bool b = M_CALL_PARSE_STR(key_oplist, key, str, &str);                  \
-      M_IF(isSet)(                                                            \
-                  if (b == false) { goto exit_clear; }                        \
-                  M_F(name, _push)(dict, key);                                \
-                  ,                                                           \
-                  c = m_core_str_nospace(&str);                               \
-                  if (b == false || c != ':') { goto exit_clear; }            \
-                  c = m_core_str_nospace(&str);                               \
-                  str--;                                                      \
-                  b = M_CALL_PARSE_STR(value_oplist, value, str, &str);       \
-                  if (b == false) { goto exit_clear; }                        \
-                  M_F(name, _set_at)(dict, key, value);                       \
-                )                                                             \
-      c = m_core_str_nospace(&str);                                           \
-    } while (c == ',');                                                       \
-    success = (c == '}');                                                     \
-  exit_clear:                                                                 \
-    M_CALL_CLEAR(key_oplist, key);                                            \
-    M_CALL_CLEAR(value_oplist, value);                                        \
+    M_QLET(1, key, key_type, key_oplist)                                      \
+    M_IF(isSet)(,M_QLET(2, value, value_type, value_oplist)) {                \
+      do {                                                                    \
+        c = m_core_str_nospace(&str);                                         \
+        str--;                                                                \
+        bool b = M_CALL_PARSE_STR(key_oplist, key, str, &str);                \
+        M_IF(isSet)(                                                          \
+            if (b == false) { c = 0; break; }                                 \
+            M_F(name, _push)(dict, key);                                      \
+          , /* is a map */                                                    \
+            c = m_core_str_nospace(&str);                                     \
+            if (b == false || c != ':') { c = 0; break; }                     \
+            c = m_core_str_nospace(&str);                                     \
+            str--;                                                            \
+            b = M_CALL_PARSE_STR(value_oplist, value, str, &str);             \
+            if (b == false) { c = 0; break; }                                 \
+            M_F(name, _set_at)(dict, key, value);                             \
+          )                                                                   \
+        c = m_core_str_nospace(&str);                                         \
+      } while (c == ',');                                                     \
+    }                                                                         \
   exit:                                                                       \
     if (endp) *endp = str;                                                    \
-    return success;                                                           \
+    return c == '}';                                                          \
   }                                                                           \
   , /* no PARSE_STR */ )                                                      \
                                                                               \
@@ -887,32 +880,29 @@
     if (M_UNLIKELY(c == '}')) return true;                                    \
     if (M_UNLIKELY (c == EOF)) return false;                                  \
     ungetc(c, file);                                                          \
-    key_type key;                                                             \
-    M_IF(isSet)( ,value_type value);                                          \
-    M_CALL_INIT(key_oplist, key);                                             \
-    M_IF(isSet)( , M_CALL_INIT(value_oplist, value) );                        \
-    do {                                                                      \
+    M_QLET(1, key, key_type, key_oplist)                                      \
+    M_IF(isSet)(,M_QLET(2, value, value_type, value_oplist)) {                \
+      do {                                                                    \
+        c = m_core_fgetc_nospace(file);                                       \
+        if (M_UNLIKELY (c == EOF)) { break; }                                 \
+        ungetc(c, file);                                                      \
+        bool b = M_CALL_IN_STR(key_oplist, key, file);                        \
+        M_IF(isSet)(                                                          \
+            if (M_UNLIKELY (b == false)) { c = 0; break; }                    \
+            M_F(name, _push)(dict, key);                                      \
+        , /* is map */                                                        \
+            c = m_core_fgetc_nospace(file);                                   \
+            if (M_UNLIKELY (b == false || c != ':')) { c = 0; break; }        \
+            c = m_core_fgetc_nospace(file);                                   \
+            if (M_UNLIKELY (c == EOF)) { break; }                             \
+            ungetc(c, file);                                                  \
+            b = M_CALL_IN_STR(value_oplist, value, file);                     \
+            if (M_UNLIKELY (b == false)) { c = 0; break; }                    \
+            M_F(name, _set_at)(dict, key, value);                             \
+        )                                                                     \
       c = m_core_fgetc_nospace(file);                                         \
-      if (M_UNLIKELY (c == EOF)) { break; }                                   \
-      ungetc(c, file);                                                        \
-      bool b = M_CALL_IN_STR(key_oplist, key, file);                          \
-      M_IF(isSet)(                                                            \
-                  if (M_UNLIKELY (b == false)) { break; }                     \
-                  M_F(name, _push)(dict, key);                                \
-      ,                                                                       \
-                  c = m_core_fgetc_nospace(file);                             \
-                  if (M_UNLIKELY (b == false || c != ':')) { c = 0; break; }  \
-                  c = m_core_fgetc_nospace(file);                             \
-                  if (M_UNLIKELY (c == EOF)) { break; }                       \
-                  ungetc(c, file);                                            \
-                  b = M_CALL_IN_STR(value_oplist, value, file);               \
-                  if (M_UNLIKELY (b == false)) { c = 0; break; }              \
-                  M_F(name, _set_at)(dict, key, value);                       \
-      )                                                                       \
-      c = m_core_fgetc_nospace(file);                                         \
-    } while (c == ',');                                                       \
-    M_CALL_CLEAR(key_oplist, key);                                            \
-    M_IF(isSet)(, M_CALL_CLEAR(value_oplist, value); )                        \
+      } while (c == ',');                                                     \
+    }                                                                         \
     return c == '}';                                                          \
   }                                                                           \
   , /* no IN_STR */ )                                                         \
@@ -968,37 +958,32 @@
     m_serial_local_t local;                                                   \
     m_serial_return_code_t ret;                                               \
     size_t estimated_size = 0;                                                \
-    key_type key;                                                             \
     M_F(name,_reset)(t1);                                                     \
-    M_IF(isSet)(                                                              \
-                ret = f->m_interface->read_array_start(local, f, &estimated_size); \
-                if (M_UNLIKELY (ret != M_SERIAL_OK_CONTINUE)) return ret;     \
-                M_CALL_INIT(key_oplist, key);                                 \
-                do {                                                          \
-                  ret = M_CALL_IN_SERIAL(key_oplist, key, f);                 \
-                  if (ret != M_SERIAL_OK_DONE) { break; }                     \
-                  M_F(name, _push)(t1, key);                                  \
-                } while ((ret = f->m_interface->read_array_next(local, f)) == M_SERIAL_OK_CONTINUE); \
-                M_CALL_CLEAR(key_oplist, key);                                \
-                ,                                                             \
-                value_type value;                                             \
-                ret = f->m_interface->read_map_start(local, f, &estimated_size); \
-                if (M_UNLIKELY (ret != M_SERIAL_OK_CONTINUE)) return ret;     \
-                M_CALL_INIT(key_oplist, key);                                 \
-                M_CALL_INIT (value_oplist, value);                            \
-                do {                                                          \
-                  ret = M_CALL_IN_SERIAL(key_oplist, key, f);                 \
-                  if (ret != M_SERIAL_OK_DONE)     return M_SERIAL_FAIL;      \
-                  ret = f->m_interface->read_map_value(local, f);             \
-                  if (ret != M_SERIAL_OK_CONTINUE) return M_SERIAL_FAIL;      \
-                  ret = M_CALL_IN_SERIAL(value_oplist, value, f);             \
-                  if (ret != M_SERIAL_OK_DONE)     return M_SERIAL_FAIL;      \
-                  M_F(name, _set_at)(t1, key, value);                         \
-                } while ((ret = f->m_interface->read_map_next(local, f)) == M_SERIAL_OK_CONTINUE); \
-                M_CALL_CLEAR(key_oplist, key);                                \
-                M_CALL_CLEAR(value_oplist, value);                            \
-                ) /* End of IF isSet */                                       \
-      return ret;                                                             \
+    M_QLET(1, key, key_type, key_oplist)                                      \
+    M_IF(isSet)(,M_QLET(2, value, value_type, value_oplist)) {                \
+        M_IF(isSet)(                                                          \
+            ret = f->m_interface->read_array_start(local, f, &estimated_size); \
+            if (M_UNLIKELY (ret != M_SERIAL_OK_CONTINUE)) break;              \
+            do {                                                              \
+              ret = M_CALL_IN_SERIAL(key_oplist, key, f);                     \
+              if (ret != M_SERIAL_OK_DONE) break;                             \
+              M_F(name, _push)(t1, key);                                      \
+            } while ((ret = f->m_interface->read_array_next(local, f)) == M_SERIAL_OK_CONTINUE); \
+        , /* is map */                                                        \
+            ret = f->m_interface->read_map_start(local, f, &estimated_size);  \
+            if (M_UNLIKELY (ret != M_SERIAL_OK_CONTINUE)) break;              \
+            do {                                                              \
+              ret = M_CALL_IN_SERIAL(key_oplist, key, f);                     \
+              if (ret != M_SERIAL_OK_DONE) break;                             \
+              ret = f->m_interface->read_map_value(local, f);                 \
+              if (ret != M_SERIAL_OK_CONTINUE) break;                         \
+              ret = M_CALL_IN_SERIAL(value_oplist, value, f);                 \
+              if (ret != M_SERIAL_OK_DONE) break;                             \
+              M_F(name, _set_at)(t1, key, value);                             \
+            } while ((ret = f->m_interface->read_map_next(local, f)) == M_SERIAL_OK_CONTINUE); \
+        ) /* End of IF isSet */                                               \
+    }                                                                         \
+    return ret;                                                               \
   }                                                                           \
   , /* no in_serial */ )                                                      \
                                                                               \
@@ -1057,7 +1042,7 @@
 #define M_D1CT_OPLIST_FAILURE(name, key_oplist, value_oplist)                 \
   ((M_LIB_ERROR(ARGUMENT_OF_DICT_OPLIST_IS_NOT_AN_OPLIST, name, key_oplist, value_oplist)))
 
-/* Define the oplist of a dictionnary
+/* Define the oplist of a dictionary
    NOTE: IT_REF is not exported so that the contained appears as not modifiable
    by algorithm.*/
 #define M_D1CT_OPLIST_P4(name, key_oplist, value_oplist)                      \
@@ -1071,7 +1056,7 @@
    SWAP(M_F(name, _swap)),                                                    \
    RESET(M_F(name, _reset)),                                                  \
    NAME(name),                                                                \
-   TYPE(M_F(name, _ct)),                                                      \
+   TYPE(M_F(name, _ct)), GENTYPE(struct M_F(name,_s)*),                       \
    SUBTYPE(M_F(name, _subtype_ct)),                                           \
    EMPTY_P(M_F(name,_empty_p)),                                               \
    IT_TYPE(M_F(name, _it_ct)),                                                \
@@ -1126,7 +1111,7 @@
    SWAP(M_F(name, _swap)),                                                    \
    RESET(M_F(name, _reset)),                                                  \
    NAME(name),                                                                \
-   TYPE(M_F(name, _ct)),                                                      \
+   TYPE(M_F(name, _ct)), GENTYPE(struct M_F(name,_s)*),                       \
    SUBTYPE(M_F(name, _subtype_ct)),                                           \
    EMPTY_P(M_F(name,_empty_p)),                                               \
    PUSH(M_F(name,_push)),                                                     \
@@ -1194,11 +1179,11 @@ enum m_d1ct_oa_element_e {
 # define M_D1CT_OA_PROBING(s) ((s)++)
 #endif
 
-/* Lower Bound of the hash table (TODO: Common macro for both dictionnary) */
+/* Lower Bound of the hash table (TODO: Common macro for both dictionary) */
 #ifndef M_D1CT_OA_LOWER_BOUND
 #define M_D1CT_OA_LOWER_BOUND 0.2
 #endif
-/* Upper Bound of the hash table (TODO: Common macro for both dictionnary)  */
+/* Upper Bound of the hash table (TODO: Common macro for both dictionary)  */
 #ifndef M_D1CT_OA_UPPER_BOUND
 #define M_D1CT_OA_UPPER_BOUND 0.7
 #endif
@@ -1416,7 +1401,7 @@ enum m_d1ct_oa_element_e {
     /* Then let's rehash all the entries in their **exact** position.         \
        If we can't, let's put them in the 'tmp' array.                        \
        It has been measured that the size of this 'tmp' array is              \
-       around 6% of the size of updated dictionnary.                          \
+       around 6% of the size of updated dictionary.                           \
        NOTE: This should be much cache friendly than typical hash code  */    \
     M_F(name, _array_pair_ct) tmp;                                            \
     M_F(name, _array_pair_init)(tmp);                                         \
@@ -1950,7 +1935,7 @@ enum m_d1ct_oa_element_e {
     M_D1CT_OA_CONTRACT(dict);                                                 \
     size_t size;                                                              \
     /* Get the size which will allow to fit this capacity                     \
-       NOTE: Stricly speaking we need to perform a round up to ensure         \
+       NOTE: Strictly speaking we need to perform a round up to ensure        \
        that no reallocation of the hash map occurs up to capacity */          \
     size = (size_t) m_core_roundpow2 ((uint64_t) ((double) capacity * (1.0 / coeff_up))); \
     /* Test for overflow of the computation */                                \

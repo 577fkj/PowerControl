@@ -20,6 +20,4 @@
 #define CENTER_KEY GPIO_NUM_16
 #define DOWN_KEY GPIO_NUM_46
 
-void can_send(uint32_t can_id, uint8_t data[]);
-
 #endif

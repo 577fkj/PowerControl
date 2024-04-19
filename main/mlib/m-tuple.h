@@ -1,7 +1,7 @@
 /*
  * M*LIB - TUPLE module
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -134,6 +134,7 @@ namespace m_lib {
   M_TUPL3_DEFINE_CLEAR(name, __VA_ARGS__)                                     \
   M_TUPL3_DEFINE_GETTER_FIELD(name, __VA_ARGS__)                              \
   M_TUPL3_DEFINE_SETTER_FIELD(name, __VA_ARGS__)                              \
+  M_TUPL3_DEFINE_EMPLACE_FIELD(name, __VA_ARGS__)                             \
   M_TUPL3_IF_ONE(CMP, __VA_ARGS__)(M_TUPL3_DEFINE_CMP(name, __VA_ARGS__),)    \
   M_TUPL3_IF_ALL(CMP, __VA_ARGS__)(M_TUPL3_DEFINE_CMP_ORDER(name, __VA_ARGS__),) \
   M_TUPL3_DEFINE_CMP_FIELD(name, __VA_ARGS__)                                 \
@@ -243,34 +244,36 @@ namespace m_lib {
 /* Define the INIT method calling the INIT method for all params */
 #define M_TUPL3_DEFINE_INIT(name, ...)                                        \
   M_INLINE void M_F(name, _init)(M_F(name,_ct) my) {                          \
-    M_MAP(M_TUPL3_DEFINE_INIT_FUNC , __VA_ARGS__)                             \
+    M_MAP(M_TUPL3_DEFINE_INIT_FUNC , __VA_ARGS__) {}                          \
   }
 
 #define M_TUPL3_DEFINE_INIT_FUNC(a)                                           \
-  M_TUPL3_CALL_INIT(a, my -> M_TUPL3_GET_FIELD a );
+  M_CHAIN_OBJ(M_TUPL3_GET_FIELD a, M_TUPL3_GET_OPLIST a, my -> M_TUPL3_GET_FIELD a)
 
 /* Define the INIT_SET method calling the INIT_SET method for all params */
 #define M_TUPL3_DEFINE_INIT_SET(name, ...)                                    \
   M_INLINE void M_F(name, _init_set)(M_F(name,_ct) my , M_F(name,_ct) const org) { \
     M_TUPL3_CONTRACT(org);                                                    \
-    M_MAP(M_TUPL3_DEFINE_INIT_SET_FUNC , __VA_ARGS__)                         \
+    M_MAP(M_TUPL3_DEFINE_INIT_SET_FUNC , __VA_ARGS__) {}                      \
   }
 #define M_TUPL3_DEFINE_INIT_SET_FUNC(a)                                       \
-  M_TUPL3_CALL_INIT_SET(a, my -> M_TUPL3_GET_FIELD a , org -> M_TUPL3_GET_FIELD a );
+  M_CHAIN_OBJ(M_TUPL3_GET_FIELD a, M_TUPL3_GET_OPLIST a,                      \
+              my -> M_TUPL3_GET_FIELD a , org -> M_TUPL3_GET_FIELD a )
 
 /* Define the INIT_WITH method calling the INIT_SET method for all params. */
 #define M_TUPL3_DEFINE_INIT_SET2(name, ...)                                   \
   M_INLINE void M_F(name, _init_emplace)(M_F(name,_ct) my                     \
                       M_MAP(M_TUPL3_DEFINE_INIT_SET2_PROTO, __VA_ARGS__)      \
                                            ) {                                \
-    M_MAP(M_TUPL3_DEFINE_INIT_SET2_FUNC , __VA_ARGS__)                        \
+    M_MAP(M_TUPL3_DEFINE_INIT_SET2_FUNC , __VA_ARGS__) {}                     \
   }
 
 #define M_TUPL3_DEFINE_INIT_SET2_PROTO(a)                                     \
   , M_TUPL3_GET_TYPE a const M_TUPL3_GET_FIELD a
 
 #define M_TUPL3_DEFINE_INIT_SET2_FUNC(a)                                      \
-  M_TUPL3_CALL_INIT_SET(a, my -> M_TUPL3_GET_FIELD a , M_TUPL3_GET_FIELD a );
+  M_CHAIN_OBJ(M_TUPL3_GET_FIELD a, M_TUPL3_GET_OPLIST a,                      \
+              my -> M_TUPL3_GET_FIELD a , M_TUPL3_GET_FIELD a )
 
 
 /* Define the SET method calling the SET method for all params. */
@@ -343,6 +346,25 @@ namespace m_lib {
        (M_F(name,_ct) my, M_TUPL3_GET_TYPE a const M_TUPL3_GET_FIELD a) {     \
     M_TUPL3_CONTRACT(my);                                                     \
     M_TUPL3_CALL_SET(a, my ->M_TUPL3_GET_FIELD a, M_TUPL3_GET_FIELD a);       \
+  }
+
+
+/* Define the EMPLACE_field methods for all params. */
+#define M_TUPL3_DEFINE_EMPLACE_FIELD(name, ...)                               \
+  M_REDUCE3(M_TUPL3_DEFINE_EMPLACE_FIELD_PROTO, M_TUPL3_DEFINE_EMPLACE_G, name, __VA_ARGS__)
+
+#define M_TUPL3_DEFINE_EMPLACE_G(a, b) a b
+
+#define M_TUPL3_DEFINE_EMPLACE_FIELD_PROTO(name, id, a)                       \
+  M_EMPLACE_QUEUE_DEF(M_TUPL3_GET_FIELD a, M_F(name, _ct), M_C3(name, _emplace_, M_TUPL3_GET_FIELD a), M_TUPL3_GET_OPLIST a, M_TUPL3_EMPLACE_DEF)
+
+#define M_TUPL3_EMPLACE_DEF(name, name_t, function_name, oplist, init_func, exp_emplace_type) \
+  M_INLINE void                                                               \
+  function_name(name_t v                                                      \
+                M_EMPLACE_LIST_TYPE_VAR(a, exp_emplace_type) )                \
+  {                                                                           \
+    M_CALL_CLEAR(oplist, v->name);                                            \
+    M_EMPLACE_CALL_FUNC(a, init_func, oplist, v->name, exp_emplace_type);     \
   }
 
 
@@ -598,7 +620,8 @@ namespace m_lib {
   break;                                                                      \
 
 
-/* Define a INIT_MOVE method by calling the INIT_MOVE methods for all params */
+/* Define a INIT_MOVE method by calling the INIT_MOVE methods for all params
+   INIT_MOVE cannot fail and cannot throw any exception */
 #define M_TUPL3_DEFINE_INIT_MOVE(name, ...)                                   \
   M_INLINE void M_F(name, _init_move)(M_F(name,_ct) el, M_F(name,_ct) org) {  \
     M_TUPL3_CONTRACT(el);                                                     \
@@ -727,7 +750,7 @@ namespace m_lib {
    SET(M_F(name,_set)),                                                       \
    CLEAR(M_F(name, _clear)),                                                  \
    NAME(name),                                                                \
-   TYPE(M_F(name,_ct)),                                                       \
+   TYPE(M_F(name,_ct)), GENTYPE(struct M_F(name,_s)*),                        \
    OPLIST( (__VA_ARGS__) ),                                                   \
    M_IF_METHOD_ALL(CMP, __VA_ARGS__)(CMP(M_F(name, _cmp)),),                  \
    M_IF_METHOD_ALL(HASH, __VA_ARGS__)(HASH(M_F(name, _hash)),),               \

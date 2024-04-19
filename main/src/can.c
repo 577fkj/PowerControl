@@ -1,6 +1,6 @@
 #include "can.h"
 #include "freertos/task.h"
-#include "huawei_r48xx.h"
+#include "power_protocol.h"
 
 void can_init()
 {
@@ -36,6 +36,7 @@ void can_init()
 static void twai_receive_task(void *arg)
 {
     twai_message_t r1;
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
     while (1)
     {
         esp_err_t err = twai_receive(&r1, portMAX_DELAY);
@@ -43,7 +44,7 @@ static void twai_receive_task(void *arg)
         {
         case ESP_OK:
             // printf_msg(RECEIVEMSG, &r1);
-            can_data_handle(r1.identifier, r1.data);
+            power_protocol->can_data_handle(r1.identifier, r1.data);
             break;
         case ESP_ERR_TIMEOUT:
             printf("Receive timeout\n");
@@ -56,7 +57,7 @@ static void twai_receive_task(void *arg)
     vTaskDelete(NULL);
 }
 
-void can_send(uint32_t can_id, uint8_t data[])
+void can_send(uint32_t can_id, uint8_t data[], uint8_t data_length)
 {
 
     // twai_message_t s1 = {
@@ -65,16 +66,18 @@ void can_send(uint32_t can_id, uint8_t data[])
     //     .ss = 1,                           // 0-错误重发; 1-单次发送(仲裁或丢失时消息不会被重发)，对接收消息无效
     //     .self = 0,                         // 0-不接收自己发送的消息，1-接收自己发送的消息，对接收消息无效
     //     .dlc_non_comp = 0,                 // 0-数据长度不大于8(ISO 11898-1); 1-数据长度大于8(非标);
-    //     .identifier = 0xcc,                 // 11/29位ID
+    //     .identifier = 0xcc,                // 11/29位ID
     //     .data_length_code = 4,             // DLC数据长度4bit位宽
-    //     .data = {0, 0, 0, 0, 0, 0, 0, 0}}; //发送数据，对远程帧无效
+    //     .data = {0, 0, 0, 0, 0, 0, 0, 0}   //发送数据，对远程帧无效
+    // };
 
-    twai_message_t s1;
-    s1.identifier = can_id;
-    s1.extd = 1;
-    s1.self = 0;
-    s1.data_length_code = 8;
-    for (int i = 0; i < 8; i++)
+    twai_message_t s1 = {
+        .identifier = can_id,
+        .extd = 1,
+        .self = 0,
+        .data_length_code = data_length,
+    };
+    for (int i = 0; i < data_length; i++)
     {
         s1.data[i] = data[i];
     }

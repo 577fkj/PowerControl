@@ -1,7 +1,7 @@
 /*
  * M*LIB - Thin Mutex & Thread wrapper
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -80,6 +80,12 @@ M_INLINE void m_mutex_lock(m_mutex_t m)
   mtx_lock(m);
 }
 
+/* Try to lock the mutex. Return true on success */
+M_INLINE bool m_mutex_trylock(m_mutex_t m)
+{
+  return mtx_trylock(m) == thrd_success;
+}
+
 /* Unlock the mutex */
 M_INLINE void m_mutex_unlock(m_mutex_t m)
 {
@@ -136,7 +142,7 @@ M_INLINE void m_thread_join(m_thread_t t)
   (void) rc;
 }
 
-/* The thread has nothing meaningfull to do.
+/* The thread has nothing meaningful to do.
    Inform the OS to let other threads be scheduled */
 M_INLINE void m_thread_yield(void)
 {
@@ -187,7 +193,7 @@ M_END_PROTECTED_CODE
  * We cannot add theses warnings in M_BEGIN_PROTECTED_CODE
  * as they need to be disabled **BEFORE** including any system header
  * and m-core includes some system headers.
- * So we need to disable them explictly here.
+ * So we need to disable them explicitly here.
  */
 #if defined(__clang__) && __clang_major__ >= 4
   _Pragma("clang diagnostic push")
@@ -242,6 +248,12 @@ M_INLINE void m_mutex_lock(m_mutex_t m)
   EnterCriticalSection(m);
 }
 
+/* Try to Lock a mutex. Return true on success */
+M_INLINE bool m_mutex_trylock(m_mutex_t m)
+{
+  return TryEnterCriticalSection(m) != 0;
+}
+
 /* Unlock a mutex */
 M_INLINE void m_mutex_unlock(m_mutex_t m)
 {
@@ -294,7 +306,7 @@ M_INLINE void m_thread_join(m_thread_t t)
   CloseHandle(*t);
 }
 
-/* The thread has nothing meaningfull to do.
+/* The thread has nothing meaningful to do.
    Inform the OS to let other threads be scheduled */
 M_INLINE void m_thread_yield(void)
 {
@@ -390,6 +402,12 @@ M_INLINE void m_mutex_lock(m_mutex_t m)
   pthread_mutex_lock(m);
 }
 
+/* Try to Lock a mutex. Return true on success */
+M_INLINE bool m_mutex_trylock(m_mutex_t m)
+{
+  return pthread_mutex_trylock(m) == 0;
+}
+
 /* Unlock the mutex */
 M_INLINE void m_mutex_unlock(m_mutex_t m)
 {
@@ -453,7 +471,7 @@ M_INLINE void m_thread_join(m_thread_t t)
   M_ASSERT (_rc == 0);
 }
 
-/* The thread has nothing meaningfull to do.
+/* The thread has nothing meaningful to do.
    Inform the OS to let other threads be scheduled */
 M_INLINE void m_thread_yield(void)
 {
@@ -553,6 +571,12 @@ M_INLINE void m_mutex_clear(m_mutex_t m)
 M_INLINE void m_mutex_lock(m_mutex_t m)
 {
     xSemaphoreTake(m->handle, portMAX_DELAY);
+}
+
+/* Try to Lock a mutex. Return true on success */
+M_INLINE bool m_mutex_trylock(m_mutex_t m)
+{
+  return xSemaphoreTake(m->handle, 0) == pdTRUE;
 }
 
 /* Unlock the mutex */
@@ -659,7 +683,7 @@ M_INLINE void m_thread_join(m_thread_t t)
     t->SemHandle = 0;
 }
 
-/* The thread has nothing meaningfull to do.
+/* The thread has nothing meaningful to do.
    Inform the OS to let other threads be scheduled */
 M_INLINE void m_thread_yield(void)
 {
@@ -681,7 +705,7 @@ typedef struct {
 } m_once_t[1];
 
 // Initial value for m_once_t
-#define M_ONCE_INIT_VALUE            { { ATOMIC_VAR_INIT(0) } }
+#define M_ONCE_INIT_VALUE            { { M_ATOMIC_VAR_INIT(0) } }
 
 // Call the function exactly once
 M_INLINE void m_once_call(m_once_t o, void (*func)(void))

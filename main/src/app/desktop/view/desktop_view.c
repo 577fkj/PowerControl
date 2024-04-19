@@ -1,7 +1,6 @@
 #include "desktop_view.h"
 #include "app_desktop.h"
 #include "mui_include.h"
-#include "huawei_r48xx.h"
 #include <stdbool.h>
 
 #include "driver/gptimer.h"
@@ -14,6 +13,8 @@
 #include "mini_app_launcher.h"
 
 #include "utils.h"
+
+#include "power_protocol.h"
 
 bool time_tick = false;
 bool set_tick = false;
@@ -43,18 +44,21 @@ static void desktop_control_view_on_draw(void *user_data, mui_canvas_t *p_canvas
 
 static void desktop_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
 {
-    ConfigStruct *config = get_config();
+    config_t *config = get_config();
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
+    power_protocol_data_t *power_data = power_protocol->get_data();
+
     desktop_view_t *p_desktop_view = p_view->user_data;
     char buffer[64];
 
     mui_canvas_set_font(p_canvas, u8g2_font_inr16_mn); /*字库选择*/
-    sprintf(buffer, "%.2f", power_data.output_voltage);
+    sprintf(buffer, "%.2f", power_data->output_voltage);
     mui_canvas_draw_utf8_right(p_canvas, 65, 18, buffer);
     // mui_canvas_set_font(p_canvas, u8g2_font_t0_18b_tf);
     // mui_canvas_draw_utf8(p_canvas, 68, 18, "V");
 
     mui_canvas_set_font(p_canvas, u8g2_font_inr16_mn);
-    sprintf(buffer, "%.2f", power_data.output_current);
+    sprintf(buffer, "%.2f", power_data->output_current);
     mui_canvas_draw_utf8_right(p_canvas, 65, 38, buffer);
     // mui_canvas_set_font(p_canvas, u8g2_font_t0_18b_tf);
     // mui_canvas_draw_utf8(p_canvas, 68, 38, "A");
@@ -70,16 +74,9 @@ static void desktop_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
 
     mui_canvas_set_font(p_canvas, u8g2_font_6x13_tf);
     // sprintf(buffer, , power_data.amp_hour / 3600);
-    if (time_tick)
-    {
-        sprintf(buffer, "%02d:%02d:%02d", timer / 3600, timer / 60, timer % 60);
-        mui_canvas_draw_utf8_right(p_canvas, 115, 38, buffer);
-    }
-    else
-    {
-        sprintf(buffer, "%02d %02d %02d", timer / 3600, timer / 60, timer % 60);
-        mui_canvas_draw_utf8_right(p_canvas, 115, 38, buffer);
-    }
+
+    sprintf(buffer, time_tick ? "%02d:%02d:%02d" : "%02d %02d %02d", timer / 3600, timer / 60, timer % 60);
+    mui_canvas_draw_utf8_right(p_canvas, 115, 38, buffer);
 
     if (p_desktop_view->set_event != SET_CURRENT)
     {
@@ -103,7 +100,6 @@ static void desktop_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
         mui_canvas_draw_utf8(p_canvas, 3, 63, "Set");
         sprintf(buffer, "%04.1fA", config->set_current);
         mui_canvas_draw_utf8_right(p_canvas, 60, 63, buffer);
-        mui_canvas_draw_line(p_canvas, 62, 40, 62, 64);
     }
     else
     {
@@ -114,16 +110,18 @@ static void desktop_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
         }
     }
 
+    mui_canvas_draw_line(p_canvas, 62, 40, 62, 64);
+
     mui_canvas_set_font(p_canvas, u8g2_font_6x13_tf);
 
-    float ah = power_data.amp_hour / 3600;
+    float ah = power_data->amp_hours / 3600;
     sprintf(buffer, ah < 100 ? "%06.3fAH" : "%06.2fAH", ah);
     mui_canvas_draw_utf8_right(p_canvas, 113, 52, buffer);
 
-    sprintf(buffer, "%04dW", (int)power_data.output_power);
+    sprintf(buffer, "%04dW", (int)power_data->output_power);
     mui_canvas_draw_utf8(p_canvas, 65, 63, buffer);
 
-    sprintf(buffer, "%.f°", power_data.output_temp);
+    sprintf(buffer, "%.f°", power_data->output_temp);
     mui_canvas_draw_utf8_right(p_canvas, 115, 63, buffer);
 }
 
@@ -152,7 +150,8 @@ void adjustValue(float *value, int pos, bool increase)
 
 static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
 {
-    ConfigStruct *config = get_config();
+    config_t *config = get_config();
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
     desktop_view_t *p_desktop_view = p_view->user_data;
     switch (event->type)
     {
@@ -166,7 +165,7 @@ static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
                 if (config->set_voltage < config->max_output_voltage)
                 {
                     adjustValue(&config->set_voltage, p_desktop_view->set_pos, true);
-                    set_voltage(config->set_voltage, false, true);
+                    power_protocol->set_voltage(config->set_voltage, false, true);
                 }
             }
             else if (p_desktop_view->set_event == SET_CURRENT)
@@ -174,7 +173,7 @@ static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
                 if (config->set_current < config->max_output_current)
                 {
                     adjustValue(&config->set_current, p_desktop_view->set_pos - 1, true);
-                    set_current(config->set_current, false, true);
+                    power_protocol->set_current(config->set_current, false, true);
                 }
             }
             break;
@@ -184,7 +183,7 @@ static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
                 if (config->min_output_voltage < config->set_voltage)
                 {
                     adjustValue(&config->set_voltage, p_desktop_view->set_pos, false);
-                    set_voltage(config->set_voltage, false, true);
+                    power_protocol->set_voltage(config->set_voltage, false, true);
                 }
             }
             else if (p_desktop_view->set_event == SET_CURRENT)
@@ -192,7 +191,7 @@ static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
                 if (config->min_output_current < config->set_current)
                 {
                     adjustValue(&config->set_current, p_desktop_view->set_pos - 1, false);
-                    set_current(config->set_current, false, true);
+                    power_protocol->set_current(config->set_current, false, true);
                 }
             }
             else
@@ -253,8 +252,10 @@ static void desktop_view_on_exit(mui_view_t *p_view) {}
 
 void desktop_tick_timer_callback(void *arg)
 {
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
+    power_protocol_data_t *power_data = power_protocol->get_data();
     set_tick = !set_tick;
-    if (power_data.output_current > 0.1)
+    if (power_data->output_current > 0.1)
     {
         time_tick = !time_tick;
     }
@@ -288,7 +289,8 @@ desktop_view_t *desktop_view_create()
     printf("create desktop view\r\n");
 
     create_timer_with_handle(&p_desktop_view->data_timer_handle, desktop_data, &desktop_tick_timer_callback, NULL);
-    esp_timer_start_periodic(p_desktop_view->data_timer_handle, 500000); // us级定时，500ms
+    esp_err_t err = esp_timer_start_periodic(p_desktop_view->data_timer_handle, 500000); // us级定时，500ms
+    ESP_ERROR_CHECK(err);
 
     return p_desktop_view;
 }

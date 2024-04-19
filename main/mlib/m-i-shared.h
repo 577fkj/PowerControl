@@ -1,7 +1,7 @@
 /*
  * M*LIB - INTRUSIVE SHARED PTR Module
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -46,13 +46,13 @@ M_BEGIN_PROTECTED_CODE
   atomic_int M_F(name, _cpt)
 
 
-/* Value of the interface field for static intialization (Uses C99 designated element). */
+/* Value of the interface field for static initialization (Uses C99 designated element). */
 #define M_ISHARED_PTR_STATIC_DESIGNATED_INIT(name, type)                      \
-  .M_F(name, _cpt) = ATOMIC_VAR_INIT(0)
+  .M_F(name, _cpt) = M_ATOMIC_VAR_INIT(0)
 
-/* Value of the interface field for static intialization (Uses C89 designated element). */
+/* Value of the interface field for static initialization (Uses C89 designated element). */
 #define M_ISHARED_PTR_STATIC_INIT(name, type)                                 \
-  ATOMIC_VAR_INIT(0)
+  M_ATOMIC_VAR_INIT(0)
 
 
 /* Define the intrusive shared pointer type and its M_INLINE functions.
@@ -95,7 +95,7 @@ M_BEGIN_PROTECTED_CODE
   CLEAR(M_F(name, _clear)),                                                   \
   RESET(M_F(name, _reset) M_IPTR),                                            \
   NAME(name),                                                                 \
-  TYPE(M_F(name, _ct)),                                                       \
+  TYPE(M_F(name, _ct)), GENTYPE(struct M_F(name,_s)*),                        \
   OPLIST(oplist),                                                             \
   SUBTYPE(M_F(name, _subtype_ct))                                             \
   )
@@ -103,7 +103,7 @@ M_BEGIN_PROTECTED_CODE
 
 /******************************** INTERNAL ***********************************/
 
-// Deferred evaluatioin
+// Deferred evaluation
 #define M_ISHAR3D_PTR_DEF_P1(arg) M_ID( M_ISHAR3D_PTR_DEF_P2 arg )
 
 /* Validate the oplist before going further */

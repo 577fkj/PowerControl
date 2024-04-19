@@ -6,20 +6,137 @@
 #include "app_module_info.h"
 #include "app_config.h"
 #include "ble_service.h"
+#include "can.h"
+#include "utils.h"
 
-RectifierParameters power_data = {
-    0,
-    .power_status = true};
+#include "esp_timer.h"
+
+#include "mini_app_defines.h"
+#include "mini_app_registry.h"
+#include "mini_app_launcher.h"
+
+#include "m-dict.h"
+
+#include "power_protocol.h"
+
+// RectifierParameters power_data = {
+//     0,
+//     .power_status = true};
 RectifierInfo power_info = {0};
+power_protocol_data_t power_data = {0};
 
-void HuaweiEAddr_init(HuaweiEAddr *self, uint8_t protoId, uint8_t addr, uint8_t cmdId, uint8_t fromSrc, uint8_t rev, uint8_t count)
+ack_dict_t ack_dict;
+
+int extractValue(const char *text, const char *key, char **value)
 {
-    self->protoId = protoId;
-    self->addr = addr;
-    self->cmdId = cmdId;
-    self->fromSrc = fromSrc;
-    self->rev = rev;
-    self->count = count;
+    char *copy = strdup(text);
+    const char *line = strtok(copy, "\n");
+    while (line != NULL)
+    {
+        if (strstr(line, key) != NULL)
+        {
+            const char *delimiter = "=";
+            char *token = strtok((char *)line, delimiter);
+            if (token != NULL)
+            {
+                token = strtok(NULL, delimiter);
+                if (token != NULL)
+                {
+                    *value = strdup(token); // 动态分配足够的内存来存储值
+                    return 1;               // 返回成功
+                }
+            }
+        }
+        line = strtok(NULL, "\n");
+    }
+
+    free(copy);
+
+    return 0; // 没有找到匹配的键，返回失败
+}
+
+void extractTextAtIndex(const char *text, const char *delimiter, int index, char **result)
+{
+    char *copy = strdup(text); // 创建文本的副本以便修改
+    char *token = strtok(copy, delimiter);
+    int currentIndex = 0;
+
+    while (token != NULL)
+    {
+        if (currentIndex == index)
+        {
+            *result = strdup(token); // 动态分配足够的内存来存储结果
+            break;
+        }
+
+        token = strtok(NULL, delimiter);
+        currentIndex++;
+    }
+
+    free(copy);
+}
+
+void app_module_info_set_info(void *data, void *user_data)
+{
+    char *info = (char *)data;
+    mui_list_view_t *p_list_view = (mui_list_view_t *)user_data;
+
+    mui_list_view_clear_items(p_list_view);
+
+    if (!info)
+    {
+        mui_list_view_add_item(p_list_view, 0x0, "连接超时", NULL);
+        mui_update(mui());
+        return;
+    }
+
+    char *buffer = NULL;
+    char *buffer2 = NULL;
+    char buffer3[20];
+
+    if (extractValue(info, "VendorName", &buffer) == 1)
+    {
+        mui_list_view_add_item(p_list_view, 0x0, "厂商", NULL);
+        mui_list_view_add_item(p_list_view, 0x0, buffer, NULL);
+        free(buffer);
+    }
+
+    if (extractValue(info, "Description", &buffer) == 1)
+    {
+        extractTextAtIndex(buffer, ",", 1, &buffer2);
+        mui_list_view_add_item(p_list_view, 0x0, "型号", NULL);
+        mui_list_view_add_item(p_list_view, 0x0, buffer2, NULL);
+        free(buffer2);
+        extractTextAtIndex(buffer, ",", 3, &buffer2);
+        mui_list_view_add_item(p_list_view, 0x0, buffer2, NULL);
+        free(buffer2);
+
+        mui_list_view_add_item(p_list_view, 0x0, "主板型号", NULL);
+        extractTextAtIndex(buffer, ",", 2, &buffer2);
+        mui_list_view_add_item(p_list_view, 0x0, buffer2, NULL);
+        free(buffer2);
+        free(buffer);
+    }
+
+    if (extractValue(info, "BarCode", &buffer) == 1)
+    {
+        mui_list_view_add_item(p_list_view, 0x0, "序列号", NULL);
+        mui_list_view_add_item(p_list_view, 0x0, buffer, NULL);
+        free(buffer);
+    }
+
+    if (extractValue(info, "Manufactured", &buffer) == 1)
+    {
+        mui_list_view_add_item(p_list_view, 0x0, "出厂时间", NULL);
+        mui_list_view_add_item(p_list_view, 0x0, buffer, NULL);
+        free(buffer);
+    }
+
+    mui_list_view_add_item(p_list_view, 0x0, "运行时间 (H)", NULL);
+    sprintf(buffer3, "%ld", power_info.run_hour);
+    mui_list_view_add_item(p_list_view, 0x0, buffer3, NULL);
+
+    mui_update(mui());
 }
 
 // char *HuaweiEAddr_to_string(const HuaweiEAddr *self)
@@ -48,44 +165,86 @@ void HuaweiEAddr_unpack(HuaweiEAddr *self, uint32_t val)
 
 void send_get_data()
 {
-    HuaweiEAddr addr = {0};
-    HuaweiEAddr_init(&addr, HUAWEI_R48XX_PROTOCOL_ID, 0x00, HUAWEI_R48XX_MSG_DATA_ID, 0x01, 0x3F, 0x00);
-    can_send(HuaweiEAddr_pack(&addr), (uint8_t[]){0, 0, 0, 0, 0, 0, 0, 0});
+    HuaweiEAddr addr = {
+        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .addr = 0x00,
+        .cmdId = HUAWEI_R48XX_MSG_DATA_ID,
+        .fromSrc = 0x01,
+        .rev = 0x3F,
+        .count = 0x00,
+    };
+    uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
 void send_get_info()
 {
-    HuaweiEAddr addr = {0};
-    HuaweiEAddr_init(&addr, HUAWEI_R48XX_PROTOCOL_ID, 0x00, HUAWEI_R48XX_MSG_INFO_ID, 0x01, 0x3F, 0x00);
-    can_send(HuaweiEAddr_pack(&addr), (uint8_t[]){0, 0, 0, 0, 0, 0, 0, 0});
+    HuaweiEAddr addr = {
+        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .addr = 0x00,
+        .cmdId = HUAWEI_R48XX_MSG_INFO_ID,
+        .fromSrc = 0x01,
+        .rev = 0x3F,
+        .count = 0x00,
+    };
+    uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
 void send_get_desc()
 {
-    HuaweiEAddr addr = {0};
-    HuaweiEAddr_init(&addr, HUAWEI_R48XX_PROTOCOL_ID, 0x00, HUAWEI_R48XX_MSG_DESC_ID, 0x01, 0x3F, 0x00);
-    can_send(HuaweiEAddr_pack(&addr), (uint8_t[]){0, 0, 0, 0, 0, 0, 0, 0});
+    HuaweiEAddr addr = {
+        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .addr = 0x00,
+        .cmdId = HUAWEI_R48XX_MSG_DESC_ID,
+        .fromSrc = 0x01,
+        .rev = 0x3F,
+        .count = 0x00,
+    };
+    uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
 void set_reg(uint8_t reg, uint16_t val, bool callback)
 {
-    HuaweiEAddr addr = {0};
-    HuaweiEAddr_init(&addr, HUAWEI_R48XX_PROTOCOL_ID, callback ? 0x01 : 0x00, HUAWEI_R48XX_MSG_CONTROL_ID, 0x01, 0x3F, 0x00);
-    can_send(HuaweiEAddr_pack(&addr), (uint8_t[]){0x01, reg, 0x00, 0x00, 0x00, 0x00, (val >> 8) & 0xFF, val & 0xFF});
+    HuaweiEAddr addr = {
+        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .addr = 0x01, // 0x00 没有回调
+        .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
+        .fromSrc = 0x01,
+        .rev = 0x3F,
+        .count = 0x00,
+    };
+    uint8_t data[8] = {0x01, reg, 0x00, 0x00, 0x00, 0x00, (val >> 8) & 0xFF, val & 0xFF};
+    can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
 void power_off(bool callback)
 {
-    HuaweiEAddr addr = {0};
-    HuaweiEAddr_init(&addr, HUAWEI_R48XX_PROTOCOL_ID, callback ? 0x01 : 0x00, HUAWEI_R48XX_MSG_CONTROL_ID, 0x01, 0x3F, 0x00);
-    can_send(HuaweiEAddr_pack(&addr), (uint8_t[]){0x01, 0x32, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00});
+    HuaweiEAddr addr = {
+        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .addr = 0x01, // 0x00 没有回调
+        .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
+        .fromSrc = 0x01,
+        .rev = 0x3F,
+        .count = 0x00,
+    };
+    uint8_t data[8] = {0x01, 0x32, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
+    can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
 void power_on(bool callback)
 {
-    HuaweiEAddr addr = {0};
-    HuaweiEAddr_init(&addr, HUAWEI_R48XX_PROTOCOL_ID, callback ? 0x01 : 0x00, HUAWEI_R48XX_MSG_CONTROL_ID, 0x01, 0x3F, 0x00);
-    can_send(HuaweiEAddr_pack(&addr), (uint8_t[]){0x01, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    HuaweiEAddr addr = {
+        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .addr = 0x01, // 0x00 没有回调
+        .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
+        .fromSrc = 0x01,
+        .rev = 0x3F,
+        .count = 0x00,
+    };
+    uint8_t data[8] = {0x01, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
 void set_current(float c, bool perm, bool callback)
@@ -102,17 +261,15 @@ void set_voltage(float c, bool perm, bool callback)
     set_reg(reg, i, callback);
 }
 
-void set_power(float p, bool callback)
-{
-    uint16_t i = p * RATIO_MULTIPLIER;
-    set_reg(0x02, i, callback);
-}
+// void set_power(float p, bool perm, bool callback)
+// {
+//     uint16_t i = p * RATIO_MULTIPLIER;
+//     set_reg(0x02, i, callback);
+// }
 
 void can_data_handle(uint32_t can_id, uint8_t *can_data)
 {
-    power_data.power_connected = true;
-
-    ConfigStruct *config = get_config();
+    config_t *config = get_config();
     HuaweiEAddr h_data = {0};
     HuaweiEAddr_unpack(&h_data, can_id);
     switch (h_data.cmdId)
@@ -121,13 +278,19 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
     {
         if (can_data[3] == 0x00)
         {
-            power_data.ready_status = true;
+            // power_data.status = POWER_STATUS_POWER_ON;
+            printf("Power ready\n");
+            power_data.status = can_data[5] == 1 ? POWER_STATUS_POWER_ON : POWER_STATUS_POWER_OFF;
+            power_data.output_current = unpack_uint16_big_endian(can_data + 6) / config->offset_current;
+            if (h_data.fromSrc == 0x00)
+            {
+                power_data.amp_hours += power_data.output_current * 0.377; // 377ms
+            }
         }
-        power_data.output_status = can_data[5] == 1;
-        power_data.output_current = unpack_uint16_big_endian(can_data + 6) / config->offset_current;
-        if (h_data.fromSrc == 0x00)
+        else
         {
-            power_data.amp_hour += power_data.output_current * 0.377; // 377ms
+            power_data.status = POWER_STATUS_NOT_READY;
+            printf("Power not ready\n");
         }
     }
     break;
@@ -158,7 +321,7 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
             power_data.output_voltage = val / config->offset_voltage;
             break;
         case 0x176:
-            power_data.max_output_current = val / MAX_CURRENT_MULTIPLIER;
+            power_info.max_output_current = val / MAX_CURRENT_MULTIPLIER;
             break;
         case 0x178:
             power_data.input_voltage = val / config->offset_voltage_in;
@@ -171,13 +334,13 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
             break;
         case 0x181:
             // hexdump(can_data, 8);
-            power_data.current_limit = val / 100;
+            power_info.current_limit = val / 100;
             break; // 限流点? 输出电流?
         case 0x182:
             power_data.output_current = val / config->offset_current;
             break;
         case 0x10E:
-            power_data.run_hour = val;
+            power_info.run_hour = val;
             break;
         case 0x000: // 数据开始?
             break;
@@ -262,11 +425,12 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         {
             memset(power_info.desc, 0, 256);
         }
-        memcpy(power_info.desc + ((count - 1) * 6), can_data + 2, 6);
+        uint16_t offset = (count - 1) * 6;
+        memcpy(power_info.desc + offset, can_data + 2, 6);
         if (!h_data.count)
         {
-            power_info.desc[((count - 1) * 6) + 1] = 0x00;
-            app_module_info_set_info(power_info.desc);
+            power_info.desc[offset + 1] = 0x00;
+            call_ack(&ack_dict, HUAWEI_DESC_ACK, power_info.desc);
         }
     }
     break;
@@ -332,7 +496,7 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         break;
 
         case 0x32: // 开关机状态
-            power_data.power_status = can_data[3] == 0;
+            power_data.status = can_data[3] == 0 ? POWER_STATUS_POWER_ON : POWER_STATUS_POWER_OFF;
             printf("%s Change power status %s\n", error ? "Error" : "Success", can_data[3] == 0 ? "on" : "off");
             break;
 
@@ -356,6 +520,11 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
 
 void init_power_protocol()
 {
+    ack_dict_init(ack_dict);
+
+    create_timer(ack_check, &check_ack_timeout, ack_dict);
+    esp_err_t err = esp_timer_start_periodic(ack_check_timer_handle, MS2US(50));
+    ESP_ERROR_CHECK(err);
 }
 
 void set_status(bool status)
@@ -370,13 +539,49 @@ void set_status(bool status)
     }
 }
 
-power_protocol_app_t power_protocol_num = {
+power_protocol_data_t *get_data()
+{
+    return &power_data;
+}
+
+void draw_module_info(mui_list_view_t *p_list_view)
+{
+    mui_list_view_add_item(p_list_view, 0x0, "等待电源回复...", NULL);
+    send_get_desc();
+
+    add_ack(&ack_dict, HUAWEI_DESC_ACK, app_module_info_set_info, p_list_view, 500);
+}
+
+int tick_count = 0;
+void tick()
+{
+    send_get_data();
+
+    tick_count++;
+    config_t *config = get_config();
+    switch (tick_count)
+    {
+    case 10:
+        set_voltage(config->set_voltage, false, true);
+        set_current(config->set_current, false, true);
+        tick_count = 0;
+        break;
+    default:
+        break;
+    }
+}
+
+power_protocol_app_t huawei_r48xx_info = {
     .name = "Huawei r48xx",
     .can_data_handle = can_data_handle,
-    .init = init_power_protocol,
     .set_status = set_status,
     .set_current = set_current,
     .set_voltage = set_voltage,
-    .set_power = set_power,
-    .get_info = send_get_info,
+    .set_power = NULL,
+    .draw_module_info = draw_module_info,
+    .loop_get_data = send_get_data,
+    .init = init_power_protocol,
+    .get_data = get_data,
+    .tick = tick,
+    .tick_rate = 1000000,
 };

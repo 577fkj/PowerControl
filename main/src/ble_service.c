@@ -2,7 +2,7 @@
 
 #include "df_buffer.h"
 #include "app_config.h"
-#include "huawei_r48xx.h"
+#include "power_protocol.h"
 
 #include "utils.h"
 
@@ -19,7 +19,8 @@ void ble_app_power_data_callback(uint8_t *s_data, uint16_t len)
     ble_app_power_data_t mode = buff_get_u8(&data_read);
     uint8_t *data = buff_get_data_ptr_pos(&data_read);
 
-    ConfigStruct *config = get_config();
+    config_t *config = get_config();
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
 
     NEW_BUFFER_LOCAL(output, 0xFF);
     switch (mode)
@@ -33,14 +34,14 @@ void ble_app_power_data_callback(uint8_t *s_data, uint16_t len)
     break;
     case 0x01: // 获取数据
     {
-        buff_put_byte_array(&output, &power_data, sizeof(RectifierParameters));
+        buff_put_byte_array(&output, power_protocol->get_data(), sizeof(power_protocol_data_t));
         send_app_data(0x01, &output);
     }
     break;
     case POWER_SET_DATA_VOLTAGE: // 设置电压
     {
         float v = unpack_uint16_big_endian(buff_get_data_ptr_pos(&data_read)) / 1024.0;
-        set_voltage(v, false, true);
+        power_protocol->set_voltage(v, false, true);
 
         config->set_voltage = v;
         save_config(config);
@@ -49,7 +50,7 @@ void ble_app_power_data_callback(uint8_t *s_data, uint16_t len)
     case POWER_SET_DATA_CURRENT: // 设置电流
     {
         float c = unpack_uint16_big_endian(buff_get_data_ptr_pos(&data_read)) / 1024.0;
-        set_current(c, false, true);
+        power_protocol->set_current(c, false, true);
 
         config->set_current = c;
         save_config(config);
@@ -64,16 +65,13 @@ void ble_app_power_data_callback(uint8_t *s_data, uint16_t len)
     case POWER_SET_DATA_POWER: // 设置电源状态
     {
         printf("power status: %d\n", data[0]);
-        if (data[0])
-        {
-            printf("power on\n");
-            power_on(true);
-        }
-        else
-        {
-            printf("power off\n");
-            power_off(true);
-        }
+        power_protocol->set_status(data[0]);
+    }
+    break;
+
+    default:
+    {
+        printf("mode (%d) error!", mode);
     }
     break;
     }
@@ -210,48 +208,49 @@ void app_data_handle(uint8_t *ble_data, uint16_t len, void *user_data)
 
 void app_ble_set_callback(uint8_t mode, bool success, uint8_t *data, uint8_t len)
 {
-    NEW_BUFFER_LOCAL(buffer, 0xFF);
-    uint32_t val = unpack_uint32_big_endian(data + 4);
-    buff_put_u8(&buffer, mode);
-    buff_put_u8(&buffer, !success);
-    switch (mode)
-    {
-    case 0x00: // 设置在线电压
-    {
-        buff_put_float(&buffer, val / RATIO_MULTIPLIER);
-    }
-    break;
+    // TODO 处理设置回调
+    // NEW_BUFFER_LOCAL(buffer, 0xFF);
+    // uint32_t val = unpack_uint32_big_endian(data + 4);
+    // buff_put_u8(&buffer, mode);
+    // buff_put_u8(&buffer, !success);
+    // switch (mode)
+    // {
+    // case 0x00: // 设置在线电压
+    // {
+    //     buff_put_float(&buffer, val / RATIO_MULTIPLIER);
+    // }
+    // break;
 
-    case 0x01: // 设置离线电压
-    {
-        buff_put_float(&buffer, val / RATIO_MULTIPLIER);
-    }
-    break;
+    // case 0x01: // 设置离线电压
+    // {
+    //     buff_put_float(&buffer, val / RATIO_MULTIPLIER);
+    // }
+    // break;
 
-    case 0x02: // 设置过流保护
-    {
-        buff_put_float(&buffer, val / RATIO_MULTIPLIER);
-    }
-    break;
+    // case 0x02: // 设置过流保护
+    // {
+    //     buff_put_float(&buffer, val / RATIO_MULTIPLIER);
+    // }
+    // break;
 
-    case 0x03: // 设置在线输出电流
-    {
-        buff_put_float(&buffer, val / MAX_CURRENT_MULTIPLIER);
-    }
-    break;
+    // case 0x03: // 设置在线输出电流
+    // {
+    //     buff_put_float(&buffer, val / MAX_CURRENT_MULTIPLIER);
+    // }
+    // break;
 
-    case 0x04: // 设置离线输出电流
-    {
-        buff_put_float(&buffer, val / MAX_CURRENT_MULTIPLIER);
-    }
-    break;
+    // case 0x04: // 设置离线输出电流
+    // {
+    //     buff_put_float(&buffer, val / MAX_CURRENT_MULTIPLIER);
+    // }
+    // break;
 
-    case 0x32: // 开关机状态
-        buff_put_u8(&buffer, data[3] == 0);
-        break;
+    // case 0x32: // 开关机状态
+    //     buff_put_u8(&buffer, data[3] == 0);
+    //     break;
 
-    default:
-        break;
-    }
-    send_app_data(0x10, &buffer);
+    // default:
+    //     break;
+    // }
+    // send_app_data(0x10, &buffer);
 }

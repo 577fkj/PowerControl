@@ -1,7 +1,7 @@
 /*
  * M*LIB - Function Object module
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -96,7 +96,7 @@
 /*****************************************************************************/
 
 /* To be used by M_IF_FUNCOBJ macro defined in m-core.
-   NOTE: It is reversed (0 instead of 1) so that it can be used in M_IF reliabely.
+   NOTE: It is reversed (0 instead of 1) so that it can be used in M_IF reliably.
 */
 #define M_FUNC0BJ_IS_NOT_DEFINED 0
 
@@ -105,13 +105,13 @@
  *
  * Structure definitions are specialized in function of the presence or not
  * of parameters and/or attributes 
- * FIXME: How to factorize reasonnably well between the definitions?
+ * FIXME: How to factorize reasonably well between the definitions?
  */
 
 /* Specialization of the OPLIST in function if there is at least one member or not */
 #define M_FUNC0BJ_INS_NO_ATTR_OPLIST(name) (                                  \
   NAME(name),                                                                 \
-  TYPE(M_F(name, _ct)),                                                       \
+  TYPE(M_F(name, _ct)), GENTYPE(struct M_F(name,_s)*),                        \
   CLEAR(M_F(name, _clear)),                                                   \
   INIT(M_F(name,_init))                                                       \
   )
@@ -127,7 +127,7 @@
 /* Define the oplist of the instance */
 #define M_FUNC0BJ_INS_ATTR_OPLIST_P3(name, ...) (                             \
   NAME(name),                                                                 \
-  TYPE(M_F(name, _ct)),                                                       \
+  TYPE(M_F(name, _ct)), GENTYPE(struct M_F(name,_s)*),                        \
   INIT_WITH(M_F(name, _init_with)),                                           \
   CLEAR(M_F(name, _clear)),                                                   \
   M_IF_METHOD_ALL(INIT, __VA_ARGS__)(INIT(M_F(name,_init)),),                 \
@@ -156,7 +156,7 @@
                                                                               \
   typedef struct M_F(name, _s) {                                              \
      M_F(name, _callback_ct) callback;                                        \
-  } interface_t[1];                                                           \
+  } *interface_t;                                                             \
                                                                               \
   /* Internal type for oplist & instance */                                   \
   typedef interface_t M_F(name, _ct);                                         \
@@ -192,7 +192,7 @@
                                                                               \
   typedef struct M_F(name, _s) {                                              \
      M_F(name, _callback_ct) callback;                                        \
-  } interface_t[1];                                                           \
+  } *interface_t;                                                             \
                                                                               \
   /* Internal type for oplist & instance */                                   \
   typedef interface_t M_F(name, _ct);                                         \

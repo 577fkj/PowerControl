@@ -1,0 +1,3 @@
+[submodule "main/mlib"]
+	path = main/mlib
+	url = https://github.com/P-p-H-d/mlib

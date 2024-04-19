@@ -1,7 +1,7 @@
 /*
  * M*LIB - MEMPOOL module
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -55,8 +55,8 @@
   M_END_PROTECTED_CODE
 
 
-/* User shall be able to cutomize the size of the region segment and/or
-   the minimun number of elements.
+/* User shall be able to customize the size of the region segment and/or
+   the minimum number of elements.
    The default is the number of elements that fits in 16KB, or 256
    is the size of the type is too big.
 */

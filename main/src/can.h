@@ -8,6 +8,6 @@
 
 void can_init();
 static void twai_receive_task(void *arg);
-void can_send(uint32_t can_id, uint8_t data[]);
+void can_send(uint32_t can_id, uint8_t data[], uint8_t data_length);
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * M*LIB - Thin stdatomic wrapper for C++ compatibility
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
 #ifndef MSTARLIB_ATOMIC_H
 #define MSTARLIB_ATOMIC_H
 
-/* NOTE: Due to the C++ not having recognized stdatomic.h officialy,
+/* NOTE: Due to the C++ not having recognized stdatomic.h officially,
    it is hard to use this header directly with a C++ compiler.
    See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=60932
    clang++ has no issue with this header but if someone includes 
@@ -330,6 +330,13 @@ M_INLINE long long atomic_fetch_unlock (m_mutex_t *lock, long long val)
 
 M_END_PROTECTED_CODE
 
+#endif
+
+// C17 deprecated ATOMIC_VAR_INIT
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201710L
+# define M_ATOMIC_VAR_INIT(x) (x)
+#else
+# define M_ATOMIC_VAR_INIT(x) ATOMIC_VAR_INIT(x)
 #endif
 
 #endif

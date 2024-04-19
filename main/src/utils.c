@@ -1,6 +1,6 @@
 #include "utils.h"
 #include <string.h>
-#include "huawei_r48xx.h"
+// #include "huawei_r48xx.h"
 #include "driver/twai.h"
 
 #define USE_GCC_BSWAP_FUNCTIONS 1

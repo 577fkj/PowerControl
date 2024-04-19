@@ -1,7 +1,7 @@
 /*
  * M*LIB - dynamic priority queue module
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,13 +30,13 @@
 
 /* Priority queue based on binary heap implementation */
 
-/* Define a prioqueue of a given type and its associated functions.
+/* Define a priority queue (prioqueue) of a given type and its associated functions.
    USAGE: PRIOQUEUE_DEF(name, type [, oplist_of_the_type]) */
 #define M_PRIOQUEUE_DEF(name, ...)                                            \
   M_PRIOQUEUE_DEF_AS(name, M_F(name,_t), M_F(name,_it_t), __VA_ARGS__)
 
 
-/* Define a prioqueue of a given type and its associated functions.
+/* Define a priority queue (prioqueue) of a given type and its associated functions.
   as the name name_t with an iterator named it_t
    USAGE: PRIOQUEUE_DEF_AS(name, name_t, it_t, type [, oplist_of_the_type]) */
 #define M_PRIOQUEUE_DEF_AS(name, name_t, it_t, ...)                           \
@@ -82,7 +82,7 @@
    ,MOVE(M_F(name, _move))                                                    \
    ,SWAP(M_F(name, _swap))                                                    \
    ,NAME(name)                                                                \
-   ,TYPE(M_F(name,_ct))                                                       \
+   ,TYPE(M_F(name,_ct)), GENTYPE(struct M_F(name,_s)*)                        \
    ,SUBTYPE(M_F(name, _subtype_ct))                                           \
    ,RESET(M_F(name,_reset))                                                   \
    ,PUSH(M_F(name,_push))                                                     \
@@ -315,7 +315,8 @@
      size_t size = M_F(name, _array_size)(p->array);                          \
      size_t i = 0;                                                            \
      for(i = 0; i < size; i++) {                                              \
-       /* FIXME: Can we use CMP and the partial order to go faster? */        \
+       /* We cannot use CMP and the partial order to go faster                \
+        EQUAL & CMP may be uncorrelated */                                    \
        if (M_CALL_EQUAL(oplist, *M_F(name, _array_cget)(p->array, i), x))     \
          break;                                                               \
      }                                                                        \

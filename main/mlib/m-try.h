@@ -1,7 +1,7 @@
 /*
  * M*LIB - try / catch mechanism for M*LIB
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,11 +30,12 @@
 
 /*
  * Select mechanism to use for support of RAII and exception,
- * so that for each variables defined in M_LET,
- * their destructor is still called on throwing exceptions.
+ * so that for each variable defined using M_LET,
+ * its destructor is still called when exceptions are thrown.
  * It is either the C++ try,
- * it uses a GCC or CLANG extension,
- * or the standard c compliant way (much slower).
+ * or it uses a GCC or CLANG extension,
+ * or the standard C compliant way (much slower).
+ * The user can override the desired mechanism.
  */
 #ifndef M_USE_TRY_MECHANISM
 # if defined(__has_extension)
@@ -55,7 +56,7 @@
 
 
 /*
- * Start a protected section of code 'name' where all exceptions are catched
+ * Start a protected section of code 'name' where all exceptions are caught
  * by the associated CATCH section.
  */
 #define M_TRY(name)                                                           \
@@ -75,11 +76,12 @@
  * error_code shall be the first argument. 
  * Other arguments are integers or pointers stored in the exception.
  * error code shall be a constant positive integer.
+ * There is no genericity of the exception data structure itself.
  */
 #define M_THROW(...) do {                                                     \
     M_STATIC_ASSERT(M_RET_ARG1 (__VA_ARGS__) != 0,                            \
                     M_LIB_NOT_A_CONSTANT_NON_NULL_INTEGER,                    \
-                    "The error code shall be a non null constant");           \
+                    "The error code shall be a non null positive constant");  \
     M_STATIC_ASSERT(M_NARGS (__VA_ARGS__) <= 1+M_USE_MAX_CONTEXT,             \
                     M_LIB_TOO_MANY_ARGUMENTS,                                 \
                     "There are too many arguments for an exception.");        \
@@ -88,7 +90,7 @@
 
 
 /*
- * Size of the context data that are stored in an exception.
+ * Size of the context data that are stored in an exception data structure.
  */
 #ifndef M_USE_MAX_CONTEXT
 #define M_USE_MAX_CONTEXT 10
@@ -98,9 +100,9 @@
  * The exception itself.
  *
  * It is POD data where every fields can be used by the user.
- * It has been decided to have only one exception to simplify error
- * code, and because :
- * - using generic types is much hard in C to do (still possible)
+ * It has been decided to have only one exception data structure
+ * to simplify error code and because :
+ * - using generic types is much harder in C to do (still possible)
  * - it will make exceptions more usable for errors which should not 
  * be handled by exceptions.
  *
@@ -153,6 +155,17 @@ struct m_exception_s {
 /*****************************************************************************/
 /********************************** INTERNAL *********************************/
 /*****************************************************************************/
+
+#undef M_IF_EXCEPTION
+#define M_IF_EXCEPTION(...) __VA_ARGS__
+
+#undef M_ON_EXCEPTION
+#define M_ON_EXCEPTION(...)                                                   \
+  for(bool cont = true; cont; cont = false)                                   \
+    M_DEFER_TRY_INJECT_PRE(cont, __VA_ARGS__)                                 \
+      for( ; cont ; cont = false)                                             \
+        M_DEFER_TRY_INJECT_POST(cont, __VA_ARGS__)                            \
+          for( ; cont; cont = false)
 
 /*
  * Define the C++ back-end.
@@ -247,7 +260,7 @@ namespace m_lib {
 // Use of builtin setjmp / longjmp for GCC
 // There are at least twice faster at worst, and reduce stack consumption
 // See https://gcc.gnu.org/onlinedocs/gcc/Nonlocal-Gotos.html
-// CLANG doesn't support these builtins officialy (https://groups.google.com/g/llvm-dev/c/9QgfdW23K8M)
+// CLANG doesn't support these builtins officially (https://groups.google.com/g/llvm-dev/c/9QgfdW23K8M)
 #define m_try_setjmp(x)     __builtin_setjmp(x)
 #define m_try_longjmp(x,v)  __builtin_longjmp(x, v)
 typedef intptr_t           m_try_jmp_buf[5];
@@ -279,7 +292,7 @@ typedef intptr_t           m_try_jmp_buf[5];
 // this point in the stack frame. Each nodes are linked together, so that we can
 // analyze the stack frame on exception.
 typedef struct m_try_s {
-  enum { M_STATE_TRY, M_STATE_EXCEPTION_IN_PROGRESS, M_STATE_EXCEPTION_CATCHED,
+  enum { M_STATE_TRY, M_STATE_EXCEPTION_IN_PROGRESS, M_STATE_EXCEPTION_CAUGHT,
          M_STATE_CLEAR_JMPBUF, M_STATE_CLEAR_CB } kind;
   struct m_try_s *next;
   union {
@@ -352,7 +365,7 @@ extern M_ATTR_NO_RETURN M_ATTR_COLD_FUNCTION void m_throw(const struct m_excepti
     }                                                                         \
     /* No exception found.                                                    \
        Display the information and halt program . */                          \
-    M_RAISE_FATAL("Exception '%u' raised by (%s:%d) is not catched. Program aborted.\n", \
+    M_RAISE_FATAL("Exception '%u' raised by (%s:%d) is not caught. Program aborted.\n", \
                   exception->error_code, exception->filename, exception->line); \
   }
 
@@ -374,8 +387,8 @@ m_catch(m_try_t state, unsigned error_code, const struct m_exception_s **excepti
   *exception = &m_global_exception;
   if (error_code != 0 && m_global_exception.error_code != error_code)
     return false;
-  // The exception has been catched.
-  state->kind = M_STATE_EXCEPTION_CATCHED;
+  // The exception has been caught.
+  state->kind = M_STATE_EXCEPTION_CAUGHT;
   // Unstack the try block, so that next throw command in the CATCH block
   // will reach the upper TRY block.
   m_global_error_list = state->next;
@@ -411,7 +424,7 @@ m_try_clear(m_try_t state)
 
 // Implement the M_LET injection macros, so that the CLEAR operator is called on exception
 // Helper functions
-// Each mechanisme provide 3 helper functions:
+// Each mechanism provide 3 helper functions:
 // * pre: which is called before the constructor
 // * post: which is called after the constructor
 // * final: which is called before the destructor.
@@ -571,6 +584,10 @@ m_try_jump_final(m_try_t state)
 // In case of MEMORY FULL errors, throw an error instead of aborting.
 #undef  M_MEMORY_FULL
 #define M_MEMORY_FULL(size)    M_THROW(M_ERROR_MEMORY, (intptr_t)(size))
+
+// Add attribute volatile if exceptions are enabled
+#undef  m_volatile
+#define m_volatile volatile
 
 #endif
 

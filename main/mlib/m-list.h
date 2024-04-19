@@ -1,7 +1,7 @@
 /*
  * M*LIB - LIST module
  *
- * Copyright (c) 2017-2023, Patrick Pelissier
+ * Copyright (c) 2017-2024, Patrick Pelissier
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -109,7 +109,7 @@
    INIT_MOVE(M_F(name, _init_move)),                                          \
    SWAP(M_F(name, _swap)),                                                    \
    NAME(name),                                                                \
-   TYPE(M_F(name,_ct)),                                                       \
+   TYPE(M_F(name,_ct)), GENTYPE(struct M_F(name,_s)**),                       \
    SUBTYPE(M_F(name,_subtype_ct)),                                            \
    EMPTY_P(M_F(name,_empty_p)),                                               \
    IT_TYPE(M_F(name, _it_ct)),                                                \
@@ -188,6 +188,23 @@
    - node_t: alias for M_F(name, _node_t) [ node ]
  */
 #define M_L1ST_DEF_P3(name, type, oplist, list_t, it_t)                       \
+  M_L1ST_DEF_TYPE(name, type, oplist, list_t, it_t)                           \
+  M_CHECK_COMPATIBLE_OPLIST(name, 1, type, oplist)                            \
+  M_L1ST_MEMPOOL_DEF(name, type, oplist, list_t, it_t)                        \
+  M_L1ST_DEF_P4(name, type, oplist, list_t, it_t)                             \
+  M_EMPLACE_QUEUE_DEF(name, list_t, M_F(name, _emplace_back), oplist, M_L1ST_EMPLACE_DEF) \
+  M_L1ST_ITBASE_DEF(name, type, oplist, list_t, it_t)
+
+
+/* Define the internal contract of a list
+   (there is nothing worthy to be checked) */
+#define M_L1ST_CONTRACT(v) do {                                               \
+    M_ASSERT (v != NULL);                                                     \
+  } while (0)
+
+
+/* Define the type of a list */
+#define M_L1ST_DEF_TYPE(name, type, oplist, list_t, it_t)                     \
                                                                               \
   /* Define the node of a list, and the list as a pointer to a node */        \
   typedef struct M_F(name, _s) {                                              \
@@ -207,22 +224,9 @@
   typedef list_t M_F(name, _ct);                                              \
   typedef it_t M_F(name, _it_ct);                                             \
   typedef type M_F(name, _subtype_ct);                                        \
-                                                                              \
-  M_CHECK_COMPATIBLE_OPLIST(name, 1, type, oplist)                            \
-                                                                              \
-  M_L1ST_MEMPOOL_DEF(name, type, oplist, list_t, it_t)                        \
-  M_L1ST_DEF_P4(name, type, oplist, list_t, it_t)                             \
-  M_L1ST_ITBASE_DEF(name, type, oplist, list_t, it_t)
+ 
 
-
-/* Define the internal contract of a list
-   (there is nothing worthy to be checked) */
-#define M_L1ST_CONTRACT(v) do {                                               \
-    M_ASSERT (v != NULL);                                                     \
-  } while (0)
-
-
-/* Internal list function definition
+ /* Internal list function definition
    - name: prefix to be used
    - type: type of the elements of the list
    - oplist: oplist of the type of the elements of the container
@@ -290,7 +294,10 @@
     type *data = M_F(name, _push_raw)(v);                                     \
     if (M_UNLIKELY (data == NULL))                                            \
       return;                                                                 \
-    M_CALL_INIT_SET(oplist, *data, x);                                        \
+    M_IF_EXCEPTION(struct M_F(name, _s) *next = *v );                         \
+    M_ON_EXCEPTION( *v = next->next, M_C3(m_l1st_,name,_del)(next)) {         \
+      M_CALL_INIT_SET(oplist, *data, x);                                      \
+    }                                                                         \
   }                                                                           \
                                                                               \
   M_IF_METHOD(INIT, oplist)(                                                  \
@@ -300,7 +307,10 @@
     type *data = M_F(name, _push_raw)(v);                                     \
     if (M_UNLIKELY (data == NULL))                                            \
       return NULL;                                                            \
-    M_CALL_INIT(oplist, *data);                                               \
+    M_IF_EXCEPTION(struct M_F(name, _s) *next = *v );                         \
+    M_ON_EXCEPTION( *v = next->next, M_C3(m_l1st_,name,_del)(next)) {         \
+      M_CALL_INIT(oplist, *data);                                             \
+    }                                                                         \
     return data;                                                              \
   }                                                                           \
   , /* No INIT */)                                                            \
@@ -503,6 +513,7 @@
     }                                                                         \
     /* Update insertion_point to this element */                              \
     insertion_point->current = next;                                          \
+    insertion_point->previous = current;                                      \
     M_L1ST_CONTRACT(list);                                                    \
   }                                                                           \
                                                                               \
@@ -529,23 +540,28 @@
   M_F(name, _init_set)(list_t list, const list_t org)                         \
   {                                                                           \
     M_L1ST_CONTRACT(org);                                                     \
-    struct M_F(name, _s) *next, *it_org;                                      \
-    struct M_F(name, _s) **update_list;                                       \
-    update_list = list;                                                       \
-    it_org = *org;                                                            \
-    while (it_org != NULL) {                                                  \
-      next = M_C3(m_l1st_,name,_new)();                                       \
-      *update_list = next;                                                    \
-      if (M_UNLIKELY_NOMEM (next == NULL)) {                                  \
-        M_MEMORY_FULL(sizeof (struct M_F(name, _s)));                         \
-        /* FIXME: Partialy initialized list. What to do? */                   \
-        return;                                                               \
+    struct M_F(name, _s) *m_volatile next = NULL;                             \
+    /* On exceptions, free node and clear list*/                              \
+    M_ON_EXCEPTION(M_C3(m_l1st_,name,_del)(next), M_F(name, _clear)(list) ) { \
+      struct M_F(name, _s) *it_org;                                           \
+      struct M_F(name, _s) **update_list;                                     \
+      update_list = list;                                                     \
+      it_org = *org;                                                          \
+      while (it_org != NULL) {                                                \
+        next = M_C3(m_l1st_,name,_new)();                                     \
+        if (M_UNLIKELY_NOMEM (next == NULL)) {                                \
+          M_MEMORY_FULL(sizeof (struct M_F(name, _s)));                       \
+          *update_list = NULL;                                                \
+          return;                                                             \
+        }                                                                     \
+        M_CALL_INIT_SET(oplist, next->data, it_org->data);                    \
+        *update_list = next;                                                  \
+        update_list = &next->next;                                            \
+        it_org = it_org->next;                                                \
+        M_IF_EXCEPTION(next = NULL, *update_list = NULL);                     \
       }                                                                       \
-      update_list = &next->next;                                              \
-      M_CALL_INIT_SET(oplist, next->data, it_org->data);                      \
-      it_org = it_org->next;                                                  \
+      *update_list = NULL;                                                    \
     }                                                                         \
-    *update_list = NULL;                                                      \
     M_L1ST_CONTRACT(list);                                                    \
   }                                                                           \
                                                                               \
@@ -553,8 +569,10 @@
   M_F(name, _set)(list_t list, const list_t org)                              \
   {                                                                           \
     if (M_UNLIKELY (list == org)) return;                                     \
-    M_F(name, _clear)(list);                                                  \
-    M_F(name, _init_set)(list, org);                                          \
+    M_ON_EXCEPTION(M_F(name, _init)(list) ) {                                 \
+      M_F(name, _clear)(list);                                                \
+      M_F(name, _init_set)(list, org);                                        \
+    }                                                                         \
   }                                                                           \
                                                                               \
   M_INLINE void                                                               \
@@ -665,8 +683,6 @@
     }                                                                         \
     *list = previous;                                                         \
   }                                                                           \
-                                                                              \
-  M_EMPLACE_QUEUE_DEF(name, list_t, M_F(name, _emplace_back), oplist, M_L1ST_EMPLACE_DEF)
 
 
 /* Internal list function definition using only iterator functions 
@@ -733,18 +749,16 @@
     if (M_UNLIKELY (c == ']')) { success = true; goto exit;}                  \
     if (M_UNLIKELY (c == 0)) goto exit;                                       \
     str--;                                                                    \
-    type item;                                                                \
-    M_CALL_INIT(oplist, item);                                                \
-    do {                                                                      \
-      bool b = M_CALL_PARSE_STR(oplist, item, str, &str);                     \
-      do { c = *str++; } while (isspace(c));                                  \
-      if (b == false || c == 0) { goto exit_clear; }                          \
-      M_F(name, _push_back)(list, item);                                      \
-    } while (c == M_GET_SEPARATOR oplist);                                    \
+    M_QLET(1, item, type, oplist) {                                           \
+      do {                                                                    \
+        bool b = M_CALL_PARSE_STR(oplist, item, str, &str);                   \
+        c = m_core_str_nospace(&str);                                         \
+        if (b == false || c == 0) { c = 0; break; }                           \
+        M_F(name, _push_back)(list, item);                                    \
+      } while (c == M_GET_SEPARATOR oplist);                                  \
+      success = (c == ']');                                                   \
+    }                                                                         \
     M_F(name, _reverse)(list);                                                \
-    success = (c == ']');                                                     \
-  exit_clear:                                                                 \
-    M_CALL_CLEAR(oplist, item);                                               \
   exit:                                                                       \
     if (endp) *endp = str;                                                    \
     return success;                                                           \
@@ -763,15 +777,14 @@
     if (M_UNLIKELY (c == ']')) return true;                                   \
     if (M_UNLIKELY (c == EOF)) return false;                                  \
     ungetc(c, file);                                                          \
-    type item;                                                                \
-    M_CALL_INIT(oplist, item);                                                \
-    do {                                                                      \
-      bool b = M_CALL_IN_STR(oplist, item, file);                             \
-      do { c = fgetc(file); } while (isspace(c));                             \
-      if (b == false || c == EOF) { break; }                                  \
-      M_F(name, _push_back)(list, item);                                      \
-    } while (c == M_GET_SEPARATOR oplist);                                    \
-    M_CALL_CLEAR(oplist, item);                                               \
+    M_QLET(1, item, type, oplist) {                                           \
+      do {                                                                    \
+        bool b = M_CALL_IN_STR(oplist, item, file);                           \
+        c = m_core_fgetc_nospace(file);                                       \
+        if (b == false || c == EOF) { c = 0; break; }                         \
+        M_F(name, _push_back)(list, item);                                    \
+      } while (c == M_GET_SEPARATOR oplist);                                  \
+    }                                                                         \
     M_F(name, _reverse)(list);                                                \
     return c == ']';                                                          \
   }                                                                           \
@@ -818,15 +831,14 @@
     M_F(name,_reset)(list);                                                   \
     ret = f->m_interface->read_array_start(local, f, &estimated_size);        \
     if (M_UNLIKELY (ret != M_SERIAL_OK_CONTINUE)) return ret;                 \
-    type item;                                                                \
-    M_CALL_INIT(oplist, item);                                                \
-    do {                                                                      \
-      ret = M_CALL_IN_SERIAL(oplist, item, f);                                \
-      if (ret != M_SERIAL_OK_DONE) { break; }                                 \
-      M_F(name, _push_back)(list, item);                                      \
-      ret = f->m_interface->read_array_next(local, f);                        \
-    } while (ret == M_SERIAL_OK_CONTINUE);                                    \
-    M_CALL_CLEAR(oplist, item);                                               \
+    M_QLET(1, item, type, oplist) {                                           \
+      do {                                                                    \
+        ret = M_CALL_IN_SERIAL(oplist, item, f);                              \
+        if (ret != M_SERIAL_OK_DONE) { break; }                               \
+        M_F(name, _push_back)(list, item);                                    \
+        ret = f->m_interface->read_array_next(local, f);                      \
+      } while (ret == M_SERIAL_OK_CONTINUE);                                  \
+    }                                                                         \
     M_F(name, _reverse)(list);                                                \
     return ret;                                                               \
   }                                                                           \
@@ -926,6 +938,15 @@
 #define M_L1ST_DUAL_PUSH_DEF_FAILURE(name, type, oplist, list_t, it_t)        \
   M_STATIC_FAILURE(M_LIB_NOT_AN_OPLIST, "(LIST_DUAL_PUSH_DEF): the given argument is not a valid oplist: " #oplist)
 
+
+/* Define the internal contract of an dual-push list */
+#define M_L1ST_DUAL_PUSH_CONTRACT(l) do {                                     \
+    M_ASSERT (l != NULL);                                                     \
+    M_ASSERT ( (l->back == NULL && l->front == NULL)                          \
+             || (l->back != NULL && l->front != NULL));                       \
+  } while (0)
+
+
 /* Internal dual-push list definition
    - name: prefix to be used
    - type: type of the elements of the array
@@ -934,7 +955,17 @@
    - it_t: alias for M_F(name, _it_t) [ iterator of the container ]
  */
 #define M_L1ST_DUAL_PUSH_DEF_P3(name, type, oplist, list_t, it_t)             \
-                                                                              \
+  M_L1ST_DUAL_PUSH_DEF_TYPE(name, type, oplist, list_t, it_t)                 \
+  M_CHECK_COMPATIBLE_OPLIST(name, 1, type, oplist)                            \
+  M_L1ST_MEMPOOL_DEF(name, type, oplist, list_t, it_t)                        \
+  M_L1ST_DUAL_PUSH_DEF_P4(name, type, oplist, list_t, it_t)                   \
+  M_EMPLACE_QUEUE_DEF(name, list_t, M_F(name, _emplace_back), oplist, M_L1ST_EMPLACE_BACK_DEF) \
+  M_EMPLACE_QUEUE_DEF(name, list_t, M_F(name, _emplace_front), oplist, M_L1ST_EMPLACE_FRONT_DEF) \
+  M_L1ST_ITBASE_DEF(name, type, oplist, list_t, it_t)
+
+
+/* Define the type of a dual-push list */
+#define M_L1ST_DUAL_PUSH_DEF_TYPE(name, type, oplist, list_t, it_t)           \
   /* Node of a list (it is liked the singly linked list) */                   \
   struct M_F(name, _s) {                                                      \
     struct M_F(name, _s) *next;                                               \
@@ -964,19 +995,6 @@
   typedef it_t M_F(name, _it_ct);                                             \
   typedef type M_F(name, _subtype_ct);                                        \
                                                                               \
-  M_CHECK_COMPATIBLE_OPLIST(name, 1, type, oplist)                            \
-                                                                              \
-  M_L1ST_MEMPOOL_DEF(name, type, oplist, list_t, it_t)                        \
-  M_L1ST_DUAL_PUSH_DEF_P4(name, type, oplist, list_t, it_t)                   \
-  M_L1ST_ITBASE_DEF(name, type, oplist, list_t, it_t)
-
-
-/* Define the internal contract of an dual-push list */
-#define M_L1ST_DUAL_PUSH_CONTRACT(l) do {                                     \
-    M_ASSERT (l != NULL);                                                     \
-    M_ASSERT ( (l->back == NULL && l->front == NULL)                          \
-             || (l->back != NULL && l->front != NULL));                       \
-  } while (0)
 
 /* Internal dual-push list definition
    - name: prefix to be used
@@ -1509,9 +1527,7 @@
     list->back = previous;                                                    \
     M_L1ST_DUAL_PUSH_CONTRACT(list);                                          \
   }                                                                           \
-                                                                              \
-  M_EMPLACE_QUEUE_DEF(name, list_t, M_F(name, _emplace_back), oplist, M_L1ST_EMPLACE_BACK_DEF) \
-  M_EMPLACE_QUEUE_DEF(name, list_t, M_F(name, _emplace_front), oplist, M_L1ST_EMPLACE_FRONT_DEF)
+
 
 #if M_USE_SMALL_NAME
 #define LIST_DEF M_LIST_DEF

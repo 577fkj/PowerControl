@@ -7,12 +7,12 @@
 #include "mui_list_view.h"
 #include "app_control_bar.h"
 
-#include "huawei_r48xx.h"
-
 #include "driver/gptimer.h"
 #include "esp_timer.h"
 
 #include "utils.h"
+
+#include "power_protocol.h"
 
 typedef enum
 {
@@ -46,27 +46,52 @@ static void app_input_info_list_view_on_selected(mui_list_view_event_t event, mu
 static void app_input_info_on_draw(mui_list_view_t *p_list_view)
 {
     uint16_t force = mui_list_view_get_focus(p_list_view);
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
+    power_protocol_data_t *power_data = power_protocol->get_data();
+
     uint32_t offset = p_list_view->scroll_offset;
     mui_list_view_clear_items(p_list_view);
     char buffer[32];
     mui_list_view_add_item(p_list_view, 0x0, "输入电压", NULL);
-    sprintf(buffer, "%.2fV %.1fHz", power_data.input_voltage, power_data.input_frequency);
+    sprintf(buffer, "%.2fV %.1fHz", power_data->input_voltage, power_data->input_frequency);
     mui_list_view_add_item(p_list_view, 0x0, buffer, NULL);
 
     mui_list_view_add_item(p_list_view, 0x0, "输入电流", NULL);
-    sprintf(buffer, "%.2fA", power_data.input_current);
+    sprintf(buffer, "%.2fA", power_data->input_current);
     mui_list_view_add_item(p_list_view, 0x0, buffer, NULL);
 
     mui_list_view_add_item(p_list_view, 0x0, "输入功率", NULL);
-    sprintf(buffer, "%.2fW", power_data.input_power);
+    sprintf(buffer, "%.2fW", power_data->input_power);
     mui_list_view_add_item(p_list_view, 0x0, buffer, NULL);
 
     mui_list_view_add_item(p_list_view, 0x0, "输入温度", NULL);
-    sprintf(buffer, "%.2f°", power_data.input_temp);
+    sprintf(buffer, "%.2f°", power_data->input_temp);
     mui_list_view_add_item(p_list_view, 0x0, buffer, NULL);
 
     mui_list_view_add_item(p_list_view, 0x0, "电源状态", NULL);
-    mui_list_view_add_item(p_list_view, 0x0, power_data.ready_status ? "正常" : "异常 & 启动中", NULL);
+
+    switch (power_data->status)
+    {
+    case POWER_STATUS_NOT_READY:
+        mui_list_view_add_item(p_list_view, 0x0, "异常 & 启动中", NULL);
+        break;
+
+    case POWER_STATUS_POWER_OFF:
+        mui_list_view_add_item(p_list_view, 0x0, "关机", NULL);
+        break;
+
+    case POWER_STATUS_POWER_ON:
+        mui_list_view_add_item(p_list_view, 0x0, "正常", NULL);
+        break;
+
+    case POWER_STATUS_OFFLINE:
+        mui_list_view_add_item(p_list_view, 0x0, "离线", NULL);
+        break;
+
+    default:
+        mui_list_view_add_item(p_list_view, 0x0, "未知", NULL);
+        break;
+    }
 
     mui_list_view_set_focus(p_list_view, force);
     p_list_view->scroll_offset = offset;
