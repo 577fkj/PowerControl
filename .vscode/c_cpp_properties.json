@@ -3,8 +3,8 @@
         {
             "name": "ESP-IDF",
             "compilerPath": "${config:idf.toolsPath}\\tools\\xtensa-esp32s3-elf\\esp-12.2.0_20230208\\xtensa-esp32s3-elf\\bin\\xtensa-esp32s3-elf-gcc.exe",
-            "cppStandard": "c++17",
-            "cStandard": "c11",
+            "cppStandard": "c++23",
+            "cStandard": "c17",
             "includePath": [
                 "${config:idf.espIdfPath}/components/**",
                 "${config:idf.espIdfPathWin}/components/**",
