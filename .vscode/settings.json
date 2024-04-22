@@ -108,7 +108,11 @@
         "m-dict.h": "c",
         "gptimer.h": "c",
         "power_protocol.h": "c",
-        "initializer_list": "c"
+        "initializer_list": "c",
+        "adc_continuous.h": "c",
+        "inttypes.h": "c",
+        "task.h": "c",
+        "adc_cali.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

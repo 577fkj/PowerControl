@@ -22,6 +22,8 @@
 #include "driver/gptimer.h"
 #include "esp_timer.h"
 
+#include "log.h"
+#include "adc.h"
 #include "can.h"
 #include "ble.h"
 #include "ble_service.h"
@@ -56,6 +58,7 @@ void app_main(void)
     init_ble_service();
     can_init();
     init_key();
+    adc_init();
 
     gpio_reset_pin(LED_GPIO_PIN);
     gpio_set_direction(LED_GPIO_PIN, GPIO_MODE_OUTPUT); // 输出
@@ -63,7 +66,7 @@ void app_main(void)
 
     // 加载电源协议
     power_protocol_app_t *power_protocol = get_current_power_protocol();
-    printf("load power protocol %s, tick rate: %lld\n", power_protocol->name, power_protocol->tick_rate);
+    LOGI("load power protocol %s, tick rate: %lld\n", power_protocol->name, power_protocol->tick_rate);
     power_protocol->init();
 
     // 启动定时器 以循环方式启动定时器
@@ -73,7 +76,7 @@ void app_main(void)
 
     if (esp_timer_get_time() - start < MS2US(1000))
     {
-        printf("start timer = %lld\n", (1000 - ((esp_timer_get_time() - start) / 1000)));
+        LOGI("start timer = %lld\n", (1000 - ((esp_timer_get_time() - start) / 1000)));
         vTaskDelay((1000 - ((esp_timer_get_time() - start) / 1000)) / portTICK_PERIOD_MS);
     }
 

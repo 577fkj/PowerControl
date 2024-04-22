@@ -13,6 +13,8 @@
 #include "mini_app_launcher.h"
 
 #include "utils.h"
+#include "log.h"
+#include "adc.h"
 
 #include "power_protocol.h"
 
@@ -121,7 +123,7 @@ static void desktop_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
     sprintf(buffer, "%04dW", (int)power_data->output_power);
     mui_canvas_draw_utf8(p_canvas, 65, 63, buffer);
 
-    sprintf(buffer, "%.f°", power_data->output_temp);
+    sprintf(buffer, "%.f°", get_temp());
     mui_canvas_draw_utf8_right(p_canvas, 115, 63, buffer);
 }
 
@@ -286,7 +288,7 @@ desktop_view_t *desktop_view_create()
 
     app_control_bar_set_draw(p_desktop_view, desktop_control_view_on_draw);
 
-    printf("create desktop view\r\n");
+    LOGI("create desktop view\r\n");
 
     create_timer_with_handle(&p_desktop_view->data_timer_handle, desktop_data, &desktop_tick_timer_callback, NULL);
     esp_err_t err = esp_timer_start_periodic(p_desktop_view->data_timer_handle, 500000); // us级定时，500ms
@@ -297,7 +299,7 @@ desktop_view_t *desktop_view_create()
 
 void desktop_view_free(desktop_view_t *p_view)
 {
-    printf("free desktop view\r\n");
+    LOGI("free desktop view\r\n");
     app_control_bar_set_draw(NULL, NULL);
     mui_view_free(p_view->p_view);
     esp_timer_stop(p_view->data_timer_handle);

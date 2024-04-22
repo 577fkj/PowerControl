@@ -12,6 +12,11 @@
 #define OLED_RESET GPIO_NUM_14
 #define OLED_DC GPIO_NUM_13
 
+#define LCD_BLK GPIO_NUM_9
+
+#define FAN_CTRL GPIO_NUM_21
+#define NTC_GPIO GPIO_NUM_1
+
 // #define UP_KEY GPIO_NUM_17 // 旧版
 // #define CENTER_KEY GPIO_NUM_9 // 旧版
 // #define DOWN_KEY GPIO_NUM_18 // 旧版

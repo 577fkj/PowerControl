@@ -1,6 +1,6 @@
 #include "utils.h"
 #include <string.h>
-// #include "huawei_r48xx.h"
+#include <stdio.h>
 #include "driver/twai.h"
 
 #define USE_GCC_BSWAP_FUNCTIONS 1
@@ -223,73 +223,6 @@ void get_substring(const char *str, int start, int end, char *result)
         result[j] = str[i];
     }
     result[j] = '\0';
-}
-
-double myln(double a)
-{
-    int N = 15; // 取了前15+1项来估算
-    int k, nk;
-    double x, xx, y;
-    x = (a - 1) / (a + 1);
-    xx = x * x;
-    nk = 2 * N + 1;
-    y = 1.0 / nk;
-    for (k = N; k > 0; k--)
-    {
-        nk = nk - 2;
-        y = 1.0 / nk + xx * y;
-    }
-    return 2.0 * x * y;
-}
-
-uint16_t get_temperature_valut(uint32_t adc)
-{
-    if (adc < 186)
-    {
-        return -400;
-    }
-    if (adc > 3895)
-    {
-        return 1250;
-    }
-    double ntc_value = 0.0;
-    if (adc < NTC_Table[82][0])
-    { // 低于 42
-        for (int i = 0; i < 82; i++)
-        {
-            if ((adc >= NTC_Table[i][0]) && (adc <= NTC_Table[i][1]))
-            {
-                ntc_value = NTC_Table[i][2] + ((((adc - NTC_Table[i][0]) * 10) / (NTC_Table[i][1] - NTC_Table[i][0])) * 0.1);
-                break;
-            }
-            else if ((adc >= NTC_Table[i - 1][1]) && (adc <= NTC_Table[i][0]))
-            {
-                ntc_value = NTC_Table[i - 1][2] + ((((NTC_Table[i][0] - adc) * 10) / (NTC_Table[i][0] - NTC_Table[i - 1][1])) * 0.1);
-                break;
-            }
-        }
-    }
-    else if (adc > NTC_Table[82][1])
-    { // 大于 42
-        for (int i = 83; i < 165; i++)
-        {
-            if ((adc >= NTC_Table[i][0]) && (adc <= NTC_Table[i][1]))
-            {
-                ntc_value = NTC_Table[i][2] + ((((adc - NTC_Table[i][0]) * 10) / (NTC_Table[i][1] - NTC_Table[i][0])) * 0.1);
-                break;
-            }
-            else if ((adc >= NTC_Table[i - 1][1]) && (adc <= NTC_Table[i][0]))
-            {
-                ntc_value = NTC_Table[i - 1][2] + ((((NTC_Table[i][0] - adc) * 10) / (NTC_Table[i][0] - NTC_Table[i - 1][1])) * 0.1);
-                break;
-            }
-        }
-    }
-    else
-    {
-        ntc_value = NTC_Table[82][2] + ((((adc - NTC_Table[82][0]) * 10) / (NTC_Table[82][1] - NTC_Table[82][0])) * 0.1);
-    }
-    return (uint16_t)(ntc_value * 10);
 }
 
 /*
