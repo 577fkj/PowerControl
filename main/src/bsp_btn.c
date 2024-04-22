@@ -221,11 +221,7 @@ void init_key()
 {
     gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
 
-    /* 定义一个gpio配置结构体 */
-    gpio_config_t gpio_config_structure;
-    /* 初始化全部内容为0 */
-    memset(&gpio_config_structure, 0, sizeof(gpio_config_structure));
-    /* 初始化gpio配置结构体*/
+    gpio_config_t gpio_config_structure = {0};
     gpio_config_structure.pin_bit_mask |= (1ULL << UP_KEY);
     gpio_config_structure.pin_bit_mask |= (1ULL << CENTER_KEY);
     gpio_config_structure.pin_bit_mask |= (1ULL << DOWN_KEY);

@@ -4,6 +4,8 @@
 #include "FreeRTOSConfig.h"
 #include "freertos/queue.h"
 
+#include "log.h"
+
 void mui_event_queue_init(mui_event_queue_t *p_queue)
 {
     p_queue->event_queue = xQueueCreate(MAX_EVENT_MSG, sizeof(mui_event_t));
@@ -21,7 +23,7 @@ void mui_event_post(mui_event_queue_t *p_queue, mui_event_t *p_event)
     // CRTIAL_ENTER
     if (xQueueSend(p_queue->event_queue, p_event, NULL) != pdPASS)
     {
-        printf("event buffer is FULL!!");
+        LOGI("event buffer is FULL!!");
     }
 }
 

@@ -180,6 +180,14 @@ static inline uint8_t buff_get_u8(buffer_t *buffer)
     return value;
 }
 
+static inline float buff_get_float(buffer_t *buffer)
+{
+    float value = 0;
+    value = *(float *)(&buffer->buff[buffer->pos]);
+    buffer->pos += 4;
+    return value;
+}
+
 /*!
  *  @brief    Read byte array from global variable - receive_buff
  *

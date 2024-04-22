@@ -4,6 +4,8 @@
 
 #include <string.h>
 
+#include "log.h"
+
 void load_config(config_t *config)
 {
     // 打开NVS命名空间
@@ -11,7 +13,7 @@ void load_config(config_t *config)
     esp_err_t err = nvs_open("storage", NVS_READONLY, &nvsHandle);
     if (err != ESP_OK)
     {
-        printf("Error opening NVS namespace!\n");
+        LOGI("Error opening NVS namespace!\n");
         return;
     }
 
@@ -20,7 +22,7 @@ void load_config(config_t *config)
     err = nvs_get_blob(nvsHandle, "config", config, &dataSize);
     if (err != ESP_OK)
     {
-        printf("Error reading config from NVS!\n");
+        LOGI("Error reading config from NVS!\n");
     }
 
     // 关闭NVS命名空间
@@ -75,7 +77,7 @@ void save_config(config_t *config)
     esp_err_t err = nvs_open("storage", NVS_READWRITE, &nvsHandle);
     if (err != ESP_OK)
     {
-        printf("Error opening NVS namespace!\n");
+        LOGI("Error opening NVS namespace!\n");
         return;
     }
 
@@ -83,14 +85,14 @@ void save_config(config_t *config)
     err = nvs_set_blob(nvsHandle, "config", config, sizeof(config_t));
     if (err != ESP_OK)
     {
-        printf("Error storing config in NVS!\n");
+        LOGI("Error storing config in NVS!\n");
     }
 
     // 提交更改并关闭NVS命名空间
     err = nvs_commit(nvsHandle);
     if (err != ESP_OK)
     {
-        printf("Error committing NVS!\n");
+        LOGI("Error committing NVS!\n");
     }
     nvs_close(nvsHandle);
 }

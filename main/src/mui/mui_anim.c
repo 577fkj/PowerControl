@@ -5,6 +5,7 @@
 #include "esp_timer.h"
 
 #include "utils.h"
+#include "log.h"
 
 #define LV_ANIM_RESOLUTION 1024
 #define LV_ANIM_RES_SHIFT 10
@@ -175,7 +176,7 @@ static void mui_anim_tick_handler()
                         p_anim->current_value = p_anim->end_value;
                         p_anim->exec_cb(p_anim->var, p_anim->end_value);
                         mui_update_required = true;
-                        printf("ANIM FIX\n");
+                        LOGI("ANIM FIX\n");
                     }
 
                     mui_anim_ptr_array_remove(m_anim_ptr_array, it);
@@ -200,7 +201,7 @@ static void mui_anim_tick_handler()
     {
         m_anim_tmr_started = false;
         err_code = esp_timer_stop(m_anim_tick_tmr);
-        printf("stop anim timer..\n");
+        LOGI("stop anim timer..\n");
         ESP_ERROR_CHECK(err_code);
     }
 
@@ -272,7 +273,7 @@ void mui_anim_start(mui_anim_t *p_anim)
 
     p_anim->run_cnt = 0;
     p_anim->act_time = 0;
-    printf("anim start\n");
+    LOGI("anim start\n");
     if (!m_anim_tmr_started)
     {
         err_code = esp_timer_start_periodic(m_anim_tick_tmr, MS2US(MUI_ANIM_TICK_INTERVAL_MS));

@@ -8,6 +8,7 @@
 #include "ble_service.h"
 #include "can.h"
 #include "utils.h"
+#include "log.h"
 
 #include "esp_timer.h"
 
@@ -279,7 +280,7 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         if (can_data[3] == 0x00)
         {
             // power_data.status = POWER_STATUS_POWER_ON;
-            printf("Power ready\n");
+            LOGI("Power ready\n");
             power_data.status = can_data[5] == 1 ? POWER_STATUS_POWER_ON : POWER_STATUS_POWER_OFF;
             power_data.output_current = unpack_uint16_big_endian(can_data + 6) / config->offset_current;
             if (h_data.fromSrc == 0x00)
@@ -290,7 +291,7 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         else
         {
             power_data.status = POWER_STATUS_NOT_READY;
-            printf("Power not ready\n");
+            LOGI("Power not ready\n");
         }
     }
     break;
@@ -391,7 +392,7 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
             //        (int)(power_data.run_hour % 24));                      /* 计算小时数 */
             break; // 数据结束
         default:
-            printf("Unknown message ID: 0x%0x\n", cid);
+            LOGI("Unknown message ID: 0x%0x\n", cid);
             break; // 未知
         }
     }
@@ -467,37 +468,37 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         {
         case 0x00: // 设置在线电压
         {
-            printf("%s setting on-line voltage to %.1fV\n", error ? "Error" : "Success", val / config->offset_voltage);
+            LOGI("%s setting on-line voltage to %.1fV\n", error ? "Error" : "Success", val / config->offset_voltage);
         }
         break;
 
         case 0x01: // 设置离线电压
         {
-            printf("%s setting non-volatile (off-line) voltage to %.1fV\n", error ? "Error" : "Success", val / RATIO_MULTIPLIER);
+            LOGI("%s setting non-volatile (off-line) voltage to %.1fV\n", error ? "Error" : "Success", val / RATIO_MULTIPLIER);
         }
         break;
 
         case 0x02: // 设置过流保护
         {
-            printf("%s setting overvoltage protection to %.1fA\n", error ? "Error" : "Success", val / RATIO_MULTIPLIER);
+            LOGI("%s setting overvoltage protection to %.1fA\n", error ? "Error" : "Success", val / RATIO_MULTIPLIER);
         }
         break;
 
         case 0x03: // 设置在线输出电流
         {
-            printf("%s setting on-line current to %.1fA\n", error ? "Error" : "Success", val / config->offset_current);
+            LOGI("%s setting on-line current to %.1fA\n", error ? "Error" : "Success", val / config->offset_current);
         }
         break;
 
         case 0x04: // 设置离线输出电流
         {
-            printf("%s setting non-volatile (off-line) current to %.1fA\n", error ? "Error" : "Success", val / MAX_CURRENT_MULTIPLIER);
+            LOGI("%s setting non-volatile (off-line) current to %.1fA\n", error ? "Error" : "Success", val / MAX_CURRENT_MULTIPLIER);
         }
         break;
 
         case 0x32: // 开关机状态
             power_data.status = can_data[3] == 0 ? POWER_STATUS_POWER_ON : POWER_STATUS_POWER_OFF;
-            printf("%s Change power status %s\n", error ? "Error" : "Success", can_data[3] == 0 ? "on" : "off");
+            LOGI("%s Change power status %s\n", error ? "Error" : "Success", can_data[3] == 0 ? "on" : "off");
             break;
 
         default:
@@ -510,9 +511,9 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
         break;
 
     default:
-        printf("Unknown cmd: 0x%0x", h_data.cmdId);
-        printf("Unknown id: 0x%0x", (unsigned int)can_id);
-        printf("Unknown data:");
+        LOGI("Unknown cmd: 0x%0x", h_data.cmdId);
+        LOGI("Unknown id: 0x%0x", (unsigned int)can_id);
+        LOGI("Unknown data:");
         hexdump(can_data, 8);
         break;
     }

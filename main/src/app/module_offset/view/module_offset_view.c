@@ -86,7 +86,7 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
         sprintf(txt, "%.2f", config->offset_voltage);
         mui_canvas_draw_utf8(p_canvas, 17, 35, txt);
         mui_canvas_draw_utf8(p_canvas, 68, 10, "显示电压");
-        printf("%.2fV\n", power_data->output_voltage);
+        LOGI("%.2fV\n", power_data->output_voltage);
         sprintf(txt, "%.2fV", power_data->output_voltage);
         mui_canvas_draw_utf8(p_canvas, 75, 25, txt);
         break;

@@ -2,6 +2,8 @@
 #include "freertos/task.h"
 #include "power_protocol.h"
 
+#include "log.h"
+
 void can_init()
 {
     // CAN接口基本配置
@@ -13,21 +15,21 @@ void can_init()
     // 初始化CAN接口
     if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK)
     {
-        printf("Driver installed\n");
+        LOGI("Driver installed\n");
     }
     else
     {
-        printf("Failed to install driver\n");
+        LOGI("Failed to install driver\n");
         return;
     }
 
     if (twai_start() == ESP_OK)
     {
-        printf("Driver started\n");
+        LOGI("Driver started\n");
     }
     else
     {
-        printf("Failed to start driver\n");
+        LOGI("Failed to start driver\n");
         return;
     }
     xTaskCreatePinnedToCore(twai_receive_task, "TWAI_rx", 4096, NULL, 8, NULL, tskNO_AFFINITY);
@@ -47,7 +49,7 @@ static void twai_receive_task(void *arg)
             power_protocol->can_data_handle(r1.identifier, r1.data);
             break;
         case ESP_ERR_TIMEOUT:
-            printf("Receive timeout\n");
+            LOGI("Receive timeout\n");
             break;
 
         default:
@@ -87,7 +89,7 @@ void can_send(uint32_t can_id, uint8_t data[], uint8_t data_length)
     case ESP_OK:
         break;
     case ESP_ERR_TIMEOUT:
-        printf("Send timeout\n");
+        LOGI("Send timeout\n");
         break;
 
     default:
