@@ -6,14 +6,13 @@
 static void settings_scene_fan_speed_event_cb(mui_progress_bar_event_t event, mui_progress_bar_t *p_progress_bar)
 {
     app_settings_t *app = p_progress_bar->user_data;
+    uint8_t value = mui_progress_bar_get_current_value(p_progress_bar);
     if (event == MUI_PROGRESS_BAR_EVENT_DECREMENT || event == MUI_PROGRESS_BAR_EVENT_INCREMENT)
     {
-        uint8_t value = mui_progress_bar_get_current_value(p_progress_bar);
         fan_set_speed(value);
     }
     else
     {
-        uint8_t value = mui_progress_bar_get_current_value(p_progress_bar);
         fan_set_speed(value);
         mui_scene_dispatcher_previous_scene(app->p_scene_dispatcher);
     }
