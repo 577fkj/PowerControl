@@ -77,7 +77,7 @@ static void mui_progress_bar_on_input(mui_view_t *p_view, mui_input_event_t *eve
 
 static void mui_progress_bar_control_view_on_draw(void *user_data, mui_canvas_t *p_canvas)
 {
-    mui_canvas_set_font(p_canvas, u8g2_font_siji_t_6x10);
+    mui_canvas_set_font(p_canvas, u8g2_font_t0_13b_tr);
     mui_canvas_draw_utf8(p_canvas, 0, 14, "+");
     mui_canvas_draw_utf8(p_canvas, 0, 35, "*");
     mui_canvas_draw_utf8(p_canvas, 0, 57, "-");

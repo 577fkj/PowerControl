@@ -97,5 +97,7 @@ void del_ack(ack_dict_t *dict, uint16_t ack_id);
 
 void check_ack_timeout(ack_dict_t *dict);
 
+void init_ack_lock();
+
 power_protocol_app_t *get_current_power_protocol();
 #endif // __POWER_PROTOCOL_H__

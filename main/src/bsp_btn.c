@@ -22,7 +22,7 @@
 #define BSP_BUTTON_LONG_PUSH_TIME_MS 1000
 #define BSP_BUTTON_REPEAT_PUSH_TIMEOUT_MS 200
 
-#define BSP_BUTTON_DEBOUNCE_TIME_MS 50
+#define BSP_BUTTON_DEBOUNCE_TIME_MS 20
 
 typedef enum
 {
@@ -160,6 +160,10 @@ static void bsp_button_event_handler(uint8_t pin_no, btn_action_t button_action)
             {
                 esp_timer_stop(m_bsp_btns[idx].m_bsp_button_long_push_tmr);
                 bsp_button_callback(idx, BSP_BTN_EVENT_SHORT);
+            }
+            else
+            {
+                m_bsp_btns[idx].press_key = true;
             }
             break;
 
