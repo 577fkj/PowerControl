@@ -62,9 +62,7 @@ void app_main(void)
     adc_init();
     init_pwm();
 
-    gpio_reset_pin(LED_GPIO_PIN);
-    gpio_set_direction(LED_GPIO_PIN, GPIO_MODE_OUTPUT); // 输出
-    gpio_set_level(LED_GPIO_PIN, 1);
+    led_set_level(10);
 
     // 加载电源协议
     power_protocol_app_t *power_protocol = get_current_power_protocol();

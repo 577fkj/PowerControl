@@ -26,6 +26,32 @@ void init_pwm(void)
         .timer_sel = LEDC_TIMER_1,
     };
     ledc_channel_config(&channel_initer);
+
+    gpio_reset_pin(LED_GPIO_PIN);
+
+    ledc_channel_config_t led_channel_initer = {
+        .channel = LEDC_CHANNEL_1,
+        .duty = 0,
+        .gpio_num = LED_GPIO_PIN,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .hpoint = 0,
+        .timer_sel = LEDC_TIMER_1,
+    };
+    ledc_channel_config(&led_channel_initer);
+}
+
+void led_set_level(uint8_t level)
+{
+    if (level > 100)
+        level = 100;
+
+    int duty = (int)(level * 81.91f);
+
+    LOGI("led level: %d, duty: %d\n", level, duty);
+
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, duty);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
+    // ledc_timer_resume(LEDC_LOW_SPEED_MODE, LEDC_TIMER_1);
 }
 
 void fan_set_speed(uint8_t duty)
