@@ -42,6 +42,7 @@
 #include "power_protocol.h"
 
 #define RECEIVEMSG 1
+#define SHOW_LOGO_TIME 500
 
 void can_tick()
 {
@@ -74,15 +75,15 @@ void app_main(void)
     esp_err_t err = esp_timer_start_periodic(data_timer_handle, power_protocol->tick_rate);
     ESP_ERROR_CHECK(err);
 
-    if (esp_timer_get_time() - start < MS2US(1000))
-    {
-        LOGI("start timer = %lld\n", (1000 - ((esp_timer_get_time() - start) / 1000)));
-        vTaskDelay((1000 - ((esp_timer_get_time() - start) / 1000)) / portTICK_PERIOD_MS);
-    }
-
     mui_t *p_mui = mui();
     p_mui->u8g2 = u8g2;
     mui_init(p_mui);
+
+    if (esp_timer_get_time() - start < MS2US(SHOW_LOGO_TIME))
+    {
+        LOGI("start delay = %lld\n", US2MS(MS2US(SHOW_LOGO_TIME) - (esp_timer_get_time() - start)));
+        vTaskDelay(US2MS(MS2US(SHOW_LOGO_TIME) - (esp_timer_get_time() - start)));
+    }
 
     mini_app_launcher_t *p_launcher = mini_app_launcher();
     mini_app_launcher_init(p_launcher);

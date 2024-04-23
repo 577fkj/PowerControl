@@ -171,11 +171,11 @@ static void module_offset_view_on_input(mui_view_t *p_view, mui_input_event_t *e
     //     break;
     // case 7:
     //     save_config(config);
-    //     mini_app_launcher_run(mini_app_launcher(), MINI_APP_ID_APP_LIST);
+    mini_app_launcher_run(mini_app_launcher(), MINI_APP_ID_APP_LIST);
     //     break;
     // }
     // send_get_data();
-    // mui_update(mui());
+    mui_update(mui());
 }
 
 static void module_offset_view_on_enter(mui_view_t *p_view) {}
