@@ -42,7 +42,7 @@
 #include "power_protocol.h"
 
 #define RECEIVEMSG 1
-#define SHOW_LOGO_TIME 500
+#define SHOW_LOGO_TIME 1000
 
 void can_tick()
 {
@@ -82,7 +82,7 @@ void app_main(void)
     if (esp_timer_get_time() - start < MS2US(SHOW_LOGO_TIME))
     {
         LOGI("start delay = %lld\n", US2MS(MS2US(SHOW_LOGO_TIME) - (esp_timer_get_time() - start)));
-        vTaskDelay(US2MS(MS2US(SHOW_LOGO_TIME) - (esp_timer_get_time() - start)));
+        vTaskDelay(US2MS(MS2US(SHOW_LOGO_TIME) - (esp_timer_get_time() - start)) / portTICK_PERIOD_MS);
     }
 
     mini_app_launcher_t *p_launcher = mini_app_launcher();
