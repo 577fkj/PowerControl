@@ -32,7 +32,7 @@ void can_init()
         LOGI("Failed to start driver\n");
         return;
     }
-    xTaskCreatePinnedToCore(twai_receive_task, "TWAI_rx", 4096, NULL, 8, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(twai_receive_task, "TWAI_rx", 1024 * 4, NULL, 10, NULL, tskNO_AFFINITY);
 }
 
 static void twai_receive_task(void *arg)

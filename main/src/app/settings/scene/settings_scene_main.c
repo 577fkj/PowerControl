@@ -8,6 +8,7 @@
 typedef enum
 {
     SETTINGS_MAIN_MENU_NONE,
+    SETTINGS_MAIN_MENU_FAN_SPEED,
     SETTINGS_MAIN_MENU_BACK,
 } settings_main_menu_t;
 
@@ -22,6 +23,10 @@ static void settings_scene_main_list_view_on_selected(mui_list_view_event_t even
         mini_app_launcher_run(mini_app_launcher(), MINI_APP_ID_APP_LIST);
         break;
 
+    case SETTINGS_MAIN_MENU_FAN_SPEED:
+        mui_scene_dispatcher_next_scene(app->p_scene_dispatcher, SETTINGS_SCENE_FAN_SPEED);
+        break;
+
     default:
         break;
     }
@@ -31,6 +36,7 @@ void settings_scene_main_on_enter(void *user_data)
 {
     app_settings_t *app = user_data;
     mui_list_view_add_item(app->p_list_view, 0xe1c7, "系统版本 [1.0.0]", (void *)SETTINGS_MAIN_MENU_NONE);
+    mui_list_view_add_item(app->p_list_view, 0xe100, "风扇速度", (void *)SETTINGS_MAIN_MENU_FAN_SPEED);
     mui_list_view_add_item(app->p_list_view, ICON_HOME, "返回", (void *)SETTINGS_MAIN_MENU_BACK);
 
     mui_list_view_set_selected_cb(app->p_list_view, settings_scene_main_list_view_on_selected);

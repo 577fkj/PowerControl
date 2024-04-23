@@ -9,7 +9,7 @@
 void mui_event_queue_init(mui_event_queue_t *p_queue)
 {
     p_queue->event_queue = xQueueCreate(MAX_EVENT_MSG, sizeof(mui_event_t));
-    xTaskCreate(mui_event_dispatch, "mui_tick", 1024 * 4, p_queue, 10, NULL);
+    xTaskCreate(mui_event_dispatch, "mui_tick", 1024 * 4, p_queue, 8, NULL);
 }
 void mui_event_set_callback(mui_event_queue_t *p_queue, mui_event_handler_t dispatcher,
                             void *context)

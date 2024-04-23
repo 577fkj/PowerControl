@@ -238,7 +238,7 @@ void init_key()
     gpio_isr_handler_add(CENTER_KEY, gpio_isr_handler, (void *)CENTER_KEY); // 为相应的GPIO引脚添加ISR处理程序
     gpio_isr_handler_add(DOWN_KEY, gpio_isr_handler, (void *)DOWN_KEY);     // 为相应的GPIO引脚添加ISR处理程序
 
-    xTaskCreate(key_scan, "key_trigger", 1024 * 2, NULL, 10, NULL);
+    xTaskCreate(key_scan, "key_trigger", 1024 * 4, NULL, 9, NULL);
 }
 
 void bsp_btn_init(bsp_btn_event_cb_t p_event_cb)

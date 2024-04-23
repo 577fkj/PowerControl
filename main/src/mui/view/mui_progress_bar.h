@@ -19,6 +19,7 @@ struct mui_progress_bar_s
 {
     mui_view_t *p_view;
     string_t header;
+    string_t format;
     int32_t max_value;
     int32_t min_value;
     int32_t current_value;
@@ -53,6 +54,10 @@ static inline void mui_progress_bar_set_event_cb(mui_progress_bar_t *p_view, mui
 static inline void mui_progress_bar_set_header(mui_progress_bar_t *p_view, const char *header)
 {
     string_set_str(p_view->header, header);
+}
+static inline void mui_progress_bar_set_format(mui_progress_bar_t *p_view, const char *format)
+{
+    string_set_str(p_view->format, format);
 }
 
 static inline void mui_progress_bar_set_max_value(mui_progress_bar_t *p_view, int32_t max_value)

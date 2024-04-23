@@ -10,4 +10,8 @@ extern const mini_app_t app_control_bar_info;
 
 void app_control_bar_set_draw(void *user_data, control_bar_draw_cb_t draw);
 
+control_bar_draw_cb_t app_control_bar_get_draw();
+
+void *app_control_bar_get_user_data();
+
 #endif

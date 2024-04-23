@@ -112,7 +112,12 @@
         "adc_continuous.h": "c",
         "inttypes.h": "c",
         "task.h": "c",
-        "adc_cali.h": "c"
+        "adc_cali.h": "c",
+        "app_settings.h": "c",
+        "settings.h": "c",
+        "pwm.h": "c",
+        "settings_scene_config.h": "c",
+        "mui_canvas.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

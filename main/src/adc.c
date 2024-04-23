@@ -116,7 +116,7 @@ void adc_init()
     };
     ESP_ERROR_CHECK(adc_continuous_config(adc_handle, &adc_config));
 
-    xTaskCreate(data_output_task, "adc", 10000, NULL, 0, &s_task_handle);
+    xTaskCreate(data_output_task, "adc", 1024 * 10, NULL, 0, &s_task_handle);
 
     adc_continuous_evt_cbs_t cbs = {
         .on_conv_done = s_conv_done_cb,

@@ -30,6 +30,7 @@
 #include "oled_u8g2.h"
 #include "u8g2.h"
 #include "utils.h"
+#include "pwm.h"
 
 #include "mui_core.h"
 #include "mini_app_launcher.h"
@@ -59,6 +60,7 @@ void app_main(void)
     can_init();
     init_key();
     adc_init();
+    init_pwm();
 
     gpio_reset_pin(LED_GPIO_PIN);
     gpio_set_direction(LED_GPIO_PIN, GPIO_MODE_OUTPUT); // 输出
