@@ -28,8 +28,6 @@ static void desktop_control_view_on_draw(void *user_data, mui_canvas_t *p_canvas
     {
         mui_canvas_set_font(p_canvas, u8g2_font_t0_13b_tr); /*字库选择*/
         mui_canvas_draw_utf8(p_canvas, 2, 14, "V");
-
-        mui_canvas_set_font(p_canvas, u8g2_font_t0_13b_tr);
         mui_canvas_draw_utf8(p_canvas, 2, 35, "A");
 
         mui_canvas_set_font(p_canvas, u8g2_font_siji_t_6x10);
