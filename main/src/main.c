@@ -58,7 +58,13 @@ void app_main(void)
     int64_t start = esp_timer_get_time();
     ble_init();
     init_ble_service();
-    can_init();
+
+    // 加载电源协议
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
+    LOGI("Load power protocol %s, can speed: %ld, tick rate: %lld\n", power_protocol->name, power_protocol->can_speed, power_protocol->tick_rate);
+    can_init(power_protocol->can_speed);
+    power_protocol->init();
+
     init_key();
     adc_init();
     init_pwm();
@@ -66,11 +72,6 @@ void app_main(void)
     led_set_level(10);
 
     fan_set_speed(100);
-
-    // 加载电源协议
-    power_protocol_app_t *power_protocol = get_current_power_protocol();
-    LOGI("load power protocol %s, tick rate: %lld\n", power_protocol->name, power_protocol->tick_rate);
-    power_protocol->init();
 
     // 启动定时器 以循环方式启动定时器
     create_timer(data, &can_tick, NULL);

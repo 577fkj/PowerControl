@@ -122,7 +122,11 @@
         "system_error": "c",
         "functional": "c",
         "tuple": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "twai_types.h": "c",
+        "log.h": "c",
+        "sdkconfig.h": "c",
+        "sdkconfig": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

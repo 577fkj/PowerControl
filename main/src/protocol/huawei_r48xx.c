@@ -572,7 +572,7 @@ void tick()
     }
 }
 
-power_protocol_app_t huawei_r48xx_info = {
+const power_protocol_app_t huawei_r48xx_info = {
     .name = "Huawei r48xx",
     .can_data_handle = can_data_handle,
     .set_status = set_status,
@@ -585,4 +585,5 @@ power_protocol_app_t huawei_r48xx_info = {
     .get_data = get_data,
     .tick = tick,
     .tick_rate = 1000000,
+    .can_speed = 125000,
 };

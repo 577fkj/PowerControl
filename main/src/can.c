@@ -4,12 +4,108 @@
 
 #include "log.h"
 
-void can_init()
+// https://github.com/adafruit/circuitpython/blob/c978768d37faf3a9adee640e5d6ce991aa46aee9/ports/espressif/common-hal/canio/CAN.c#L41
+static twai_timing_config_t get_t_config(int baudrate)
+{
+    switch (baudrate)
+    {
+    case 1000000:
+    {
+        // TWAI_TIMING_CONFIG_abc expands to a C designated initializer list
+        // { .brp = 4, ...}.  This is only acceptable to the compiler as an
+        // initializer and 'return TWAI_TIMING_CONFIG_1MBITS()` is not valid.
+        // Instead, introduce a temporary, named variable and return it.
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
+        return t_config;
+    }
+    case 800000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_800KBITS();
+        return t_config;
+    }
+    case 500000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
+        return t_config;
+    }
+    case 250000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_250KBITS();
+        return t_config;
+    }
+    case 125000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_125KBITS();
+        return t_config;
+    }
+    case 100000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_100KBITS();
+        return t_config;
+    }
+    case 50000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_50KBITS();
+        return t_config;
+    }
+    case 25000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_25KBITS();
+        return t_config;
+    }
+#if defined(TWAI_TIMING_CONFIG_20KBITS)
+    case 20000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_20KBITS();
+        return t_config;
+    }
+#endif
+#if defined(TWAI_TIMING_CONFIG_16KBITS)
+    case 16000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_16KBITS();
+        return t_config;
+    }
+#endif
+#if defined(TWAI_TIMING_CONFIG_12_5KBITS)
+    case 12500:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_12_5KBITS();
+        return t_config;
+    }
+#endif
+#if defined(TWAI_TIMING_CONFIG_10KBITS)
+    case 10000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_10KBITS();
+        return t_config;
+    }
+#endif
+#if defined(TWAI_TIMING_CONFIG_5KBITS)
+    case 5000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_5KBITS();
+        return t_config;
+    }
+#endif
+#if defined(TWAI_TIMING_CONFIG_1KBITS)
+    case 1000:
+    {
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1KBITS();
+        return t_config;
+    }
+#endif
+    default:
+        LOGE("Unsupported baudrate\n");
+        abort();
+    }
+}
+
+void can_init(uint32_t baudrate)
 {
     // CAN接口基本配置
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(TX_GPIO_PIN, RX_GPIO_PIN, TWAI_MODE_NO_ACK);
-    // CAN接口时序配置官方提供了1K to 1Mbps的常用配置
-    twai_timing_config_t t_config = TWAI_TIMING_CONFIG_125KBITS(); // TWAI_TIMING_CONFIG_500KBITS()
+    twai_timing_config_t t_config = get_t_config(baudrate);
     // 接收全部
     twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
     // 初始化CAN接口

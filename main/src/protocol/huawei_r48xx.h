@@ -81,7 +81,7 @@ typedef struct
     int32_t run_hour;         // 总运行时间
 } RectifierInfo;
 
-extern power_protocol_app_t huawei_r48xx_info;
+extern const power_protocol_app_t huawei_r48xx_info;
 
 // char *HuaweiEAddr_to_string(const HuaweiEAddr *self);
 uint32_t HuaweiEAddr_pack(const HuaweiEAddr *self);

@@ -73,6 +73,7 @@ typedef struct
     get_data_t get_data;
     tick_t tick;
     uint64_t tick_rate; // 1000000 = 1s
+    uint32_t can_speed;
 } power_protocol_app_s;
 
 typedef power_protocol_app_s power_protocol_app_t;
