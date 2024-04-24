@@ -22,7 +22,7 @@
 #define BSP_BUTTON_LONG_PUSH_TIME_MS 1000
 #define BSP_BUTTON_REPEAT_PUSH_TIMEOUT_MS 200
 
-#define BSP_BUTTON_DEBOUNCE_TIME_MS 20
+#define BSP_BUTTON_DEBOUNCE_TIME_MS 50
 
 typedef enum
 {
@@ -131,7 +131,7 @@ static void bsp_button_event_handler(uint8_t pin_no, btn_action_t button_action)
         switch (m_bsp_btns[idx].state)
         {
         case BTN_STATE_IDLE:
-            err_code = esp_timer_start_once(m_bsp_btns[idx].m_bsp_button_long_push_tmr, BSP_BUTTON_LONG_PUSH_TIME_MS * 1000);
+            err_code = esp_timer_start_once(m_bsp_btns[idx].m_bsp_button_long_push_tmr, MS2US(BSP_BUTTON_LONG_PUSH_TIME_MS));
             if (err_code == ESP_OK)
             {
                 m_bsp_btns[idx].state = BTN_STATE_PRESSED;
@@ -155,31 +155,28 @@ static void bsp_button_event_handler(uint8_t pin_no, btn_action_t button_action)
             break;
 
         case BTN_STATE_PRESSED:
-            vTaskDelay(pdMS_TO_TICKS(BSP_BUTTON_DEBOUNCE_TIME_MS));
+            vTaskDelay(BSP_BUTTON_DEBOUNCE_TIME_MS / portTICK_PERIOD_MS);
             if (gpio_get_level(pin_no) == 1)
             {
                 esp_timer_stop(m_bsp_btns[idx].m_bsp_button_long_push_tmr);
                 bsp_button_callback(idx, BSP_BTN_EVENT_SHORT);
-            }
-            else
-            {
-                m_bsp_btns[idx].press_key = true;
+                m_bsp_btns[idx].state = BTN_STATE_IDLE;
             }
             break;
 
         case BTN_STATE_LONG_PRESSED:
         case BTN_STATE_REPEAT:
             esp_timer_stop(m_bsp_btns[idx].m_bsp_button_repeat_push_tmr);
+            m_bsp_btns[idx].state = BTN_STATE_IDLE;
             break;
         }
-        m_bsp_btns[idx].state = BTN_STATE_IDLE;
     }
     break;
 
     case BSP_BUTTON_ACTION_LONG_PUSH:
     {
         bsp_button_callback(idx, BSP_BTN_EVENT_LONG);
-        err_code = esp_timer_start_periodic(m_bsp_btns[idx].m_bsp_button_repeat_push_tmr, BSP_BUTTON_REPEAT_PUSH_TIMEOUT_MS * 1000);
+        err_code = esp_timer_start_periodic(m_bsp_btns[idx].m_bsp_button_repeat_push_tmr, MS2US(BSP_BUTTON_REPEAT_PUSH_TIMEOUT_MS));
         if (err_code == ESP_OK)
         {
             m_bsp_btns[idx].state = BTN_STATE_LONG_PRESSED;
@@ -203,10 +200,6 @@ static void bsp_button_event_handler(uint8_t pin_no, btn_action_t button_action)
 esp_err_t key_scan()
 {
     uint32_t io_num;
-    BaseType_t press_key = pdFALSE;
-    BaseType_t lift_key = pdFALSE;
-    int backup_time = 0;
-
     while (1)
     {
         // 接收从消息队列发来的消息

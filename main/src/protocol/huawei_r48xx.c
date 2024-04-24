@@ -521,7 +521,6 @@ void can_data_handle(uint32_t can_id, uint8_t *can_data)
 
 void init_power_protocol()
 {
-    init_ack_lock();
     ack_dict_init(ack_dict);
 
     create_timer(ack_check, &check_ack_timeout, ack_dict);
