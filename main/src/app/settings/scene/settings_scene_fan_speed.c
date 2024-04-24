@@ -2,6 +2,7 @@
 #include "mini_app_launcher.h"
 #include "settings_scene.h"
 #include "pwm.h"
+#include "app_config.h"
 
 static void settings_scene_fan_speed_event_cb(mui_progress_bar_event_t event, mui_progress_bar_t *p_progress_bar)
 {
@@ -14,6 +15,9 @@ static void settings_scene_fan_speed_event_cb(mui_progress_bar_event_t event, mu
     else
     {
         fan_set_speed(value);
+        config_t *config = get_config();
+        config->fan_speed = value;
+        save_config(config);
         mui_scene_dispatcher_previous_scene(app->p_scene_dispatcher);
     }
 }

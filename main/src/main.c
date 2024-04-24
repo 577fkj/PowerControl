@@ -42,7 +42,7 @@
 #include "power_protocol.h"
 
 #define RECEIVEMSG 1
-#define SHOW_LOGO_TIME 1000
+#define SHOW_LOGO_TIME 1500
 
 void can_tick()
 {
@@ -64,6 +64,8 @@ void app_main(void)
     init_pwm();
 
     led_set_level(10);
+
+    fan_set_speed(100);
 
     // 加载电源协议
     power_protocol_app_t *power_protocol = get_current_power_protocol();
@@ -87,4 +89,9 @@ void app_main(void)
 
     mini_app_launcher_t *p_launcher = mini_app_launcher();
     mini_app_launcher_init(p_launcher);
+
+    config_t *config = get_config();
+    fan_set_speed(config->fan_speed);
+
+    // u8g2_SetContrast(&p_mui->u8g2, (config->screen_backlight - 1) * (255.0 / 99.0));
 }

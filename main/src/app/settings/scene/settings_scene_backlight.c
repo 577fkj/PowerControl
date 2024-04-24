@@ -1,6 +1,7 @@
 #include "app_settings.h"
 #include "mini_app_launcher.h"
 #include "settings_scene.h"
+#include "app_config.h"
 
 static void settings_scene_backlight_event_cb(mui_progress_bar_event_t event, mui_progress_bar_t *p_progress_bar)
 {
@@ -15,6 +16,9 @@ static void settings_scene_backlight_event_cb(mui_progress_bar_event_t event, mu
     {
         mui_t *p_mui = mui();
         u8g2_SetContrast(&p_mui->u8g2, (value - 1) * (255.0 / 99.0));
+        config_t *config = get_config();
+        config->screen_backlight = value;
+        save_config(config);
         mui_scene_dispatcher_previous_scene(app->p_scene_dispatcher);
     }
 }
