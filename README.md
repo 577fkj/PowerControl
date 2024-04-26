@@ -20,6 +20,20 @@ The project is currently under development, and those who are capable are welcom
 | Increase     | ✅      | ✅         | ❎   |
 | INFY         | ✅      | ✅         | ❎   |
 
+# Project Structure
+
+```
+Project
+├─main
+│  └─src
+│      ├─app // Mini app
+│      ├─core // mui app core
+│      ├─mui // mui core
+|      |  └─view // mui view
+│      └─protocol // Power protocol
+└─PCB
+```
+
 # Documentation
 
 [Documentation](/doc)
