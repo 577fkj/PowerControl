@@ -20,6 +20,20 @@ The project is currently under development, and those who are capable are welcom
 | Increase     | ✅      | ✅         | ❎   |
 | INFY         | ✅      | ✅         | ❎   |
 
+# Project Structure
+
+```
+Project
+├─main
+│  └─src
+│      ├─app // Mini app
+│      ├─core // mui app core
+│      ├─mui // mui core
+|      |  └─view // mui view
+│      └─protocol // Power protocol
+└─PCB
+```
+
 # Documentation
 
 [Documentation](/doc)
@@ -35,3 +49,9 @@ The project is currently under development, and those who are capable are welcom
 # More project
 
 - [Huawei R48XX](https://github.com/stars/577fkj/lists/huawei-r48xx)
+
+# About (Chinese Only)
+
+此项目是 2023 年 6 月开始计划的，由于本人已经基本退出电摩改装圈，不保证此项目能彻底完成！
+
+~~奸商改车店能不能去死~~
