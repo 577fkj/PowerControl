@@ -53,6 +53,7 @@ void can_tick()
 void app_main(void)
 {
     config_init();
+    config_t *config = get_config();
     oled_init();
     start_ani();
     int64_t start = esp_timer_get_time();
@@ -60,6 +61,7 @@ void app_main(void)
     init_ble_service();
 
     // 加载电源协议
+    set_current_power_protocol(config->power_protocol);
     power_protocol_app_t *power_protocol = get_current_power_protocol();
     LOGI("Load power protocol %s, can speed: %ld, tick rate: %lld\n", power_protocol->name, power_protocol->can_speed, power_protocol->tick_rate);
     can_init(power_protocol->can_speed);
@@ -91,7 +93,6 @@ void app_main(void)
     mini_app_launcher_t *p_launcher = mini_app_launcher();
     mini_app_launcher_init(p_launcher);
 
-    config_t *config = get_config();
     fan_set_speed(config->fan_speed);
 
     // u8g2_SetContrast(&p_mui->u8g2, (config->screen_backlight - 1) * (255.0 / 99.0));

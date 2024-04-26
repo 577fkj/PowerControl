@@ -38,6 +38,8 @@ typedef struct
 
     uint16_t fan_speed;
     uint16_t screen_backlight;
+
+    uint8_t power_protocol;
 } config_t;
 
 void config_init();

@@ -121,7 +121,22 @@ const power_protocol_app_t *power_protocol_registry[] = {
 
 const uint32_t power_protocol_num = sizeof(power_protocol_registry) / sizeof(power_protocol_registry[0]);
 
+power_protocol_app_t *current_power_protocol;
+
+void set_current_power_protocol(uint8_t power_protocol)
+{
+    if (power_protocol < power_protocol_num)
+    {
+        current_power_protocol = power_protocol_registry[power_protocol];
+    }
+    else
+    {
+        current_power_protocol = power_protocol_registry[0];
+    }
+}
+
 power_protocol_app_t *get_current_power_protocol()
 {
+
     return power_protocol_registry[0];
 }

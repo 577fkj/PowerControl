@@ -21,13 +21,13 @@ static void mui_msg_box_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
     mui_canvas_draw_utf8(p_canvas, 2, font_height - 2, string_get_cstr(p_mui_msg_box->header));
     mui_canvas_set_draw_color(p_canvas, 1);
 
-    mui_element_autowrap_text(p_canvas, 0, font_height * 2, canvas_width, canvas_height - font_height,
+    mui_element_autowrap_text(p_canvas, 2, font_height * 2, canvas_width, canvas_height - font_height,
                               string_get_cstr(p_mui_msg_box->message));
 
     // Draw buttons
     if (string_size(p_mui_msg_box->btn_left_text) > 0)
     {
-        mui_element_button(p_canvas, 0, canvas_height - font_height - 2, string_get_cstr(p_mui_msg_box->btn_left_text),
+        mui_element_button(p_canvas, 5, canvas_height - font_height - 2, string_get_cstr(p_mui_msg_box->btn_left_text),
                            p_mui_msg_box->focus == 0);
     }
 
@@ -41,7 +41,7 @@ static void mui_msg_box_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
     if (string_size(p_mui_msg_box->btn_right_text) > 0)
     {
         const char *text = string_get_cstr(p_mui_msg_box->btn_right_text);
-        mui_element_button(p_canvas, canvas_width - mui_canvas_get_utf8_width(p_canvas, text) - 4,
+        mui_element_button(p_canvas, canvas_width - mui_canvas_get_utf8_width(p_canvas, text) - 8,
                            canvas_height - font_height - 2, text, p_mui_msg_box->focus == 2);
     }
 }
