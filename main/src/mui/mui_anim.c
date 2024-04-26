@@ -1,19 +1,16 @@
 #include "mui_anim.h"
-#include "m-array.h"
-#include "mui_mlib.h"
 #include "mui_core.h"
-#include "mui_math.h"
-#include <stdbool.h>
 
 #include "driver/gptimer.h"
 #include "esp_timer.h"
 
 #include "utils.h"
+#include "log.h"
 
 #define LV_ANIM_RESOLUTION 1024
 #define LV_ANIM_RES_SHIFT 10
 
-#define MUI_ANIM_TICK_INTERVAL_MS 50
+#define MUI_ANIM_TICK_INTERVAL_MS 20
 #define MUI_ANIM_REPEAT_INFINITE 0xFFFF
 
 ARRAY_DEF(mui_anim_ptr_array, mui_anim_t *, M_PTR_OPLIST);
@@ -174,6 +171,14 @@ static void mui_anim_tick_handler()
                 else
                 {
                     // reached end of animation
+                    if (p_anim->current_value != p_anim->end_value)
+                    {
+                        p_anim->current_value = p_anim->end_value;
+                        p_anim->exec_cb(p_anim->var, p_anim->end_value);
+                        mui_update_required = true;
+                        LOGI("ANIM FIX\n");
+                    }
+
                     mui_anim_ptr_array_remove(m_anim_ptr_array, it);
                 }
             }
@@ -196,7 +201,7 @@ static void mui_anim_tick_handler()
     {
         m_anim_tmr_started = false;
         err_code = esp_timer_stop(m_anim_tick_tmr);
-        printf("stop anim timer..\n");
+        LOGI("stop anim timer..\n");
         ESP_ERROR_CHECK(err_code);
     }
 
@@ -259,12 +264,19 @@ void mui_anim_start(mui_anim_t *p_anim)
     esp_err_t err_code;
     mui_anim_remove_ptr(p_anim);
     mui_anim_ptr_array_push_back(m_anim_ptr_array, p_anim);
+
+    // fire cb first to set value
+    if (p_anim->exec_cb != NULL)
+    {
+        p_anim->exec_cb(p_anim->var, p_anim->start_value);
+    }
+
     p_anim->run_cnt = 0;
     p_anim->act_time = 0;
-    printf("anim start\n");
+    LOGI("anim start\n");
     if (!m_anim_tmr_started)
     {
-        err_code = esp_timer_start_periodic(m_anim_tick_tmr, MUI_ANIM_TICK_INTERVAL_MS * 1000);
+        err_code = esp_timer_start_periodic(m_anim_tick_tmr, MS2US(MUI_ANIM_TICK_INTERVAL_MS));
         ESP_ERROR_CHECK(err_code);
         m_anim_tmr_started = true;
     }

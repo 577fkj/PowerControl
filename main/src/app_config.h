@@ -35,10 +35,15 @@ typedef struct
 
     char ssid[32];
     char password[32];
-} ConfigStruct;
+
+    uint16_t fan_speed;
+    uint16_t screen_backlight;
+
+    uint8_t power_protocol;
+} config_t;
 
 void config_init();
-ConfigStruct *get_config();
-void save_config(ConfigStruct *config);
+config_t *get_config();
+void save_config(config_t *config);
 
 #endif

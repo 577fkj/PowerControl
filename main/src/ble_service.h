@@ -30,36 +30,18 @@ typedef void (*ble_app_data_handle_t)(uint8_t *data, uint16_t len);
 
 typedef enum
 {
-    POWER_GET_RAW_DATA = 0x00, // 获取电源原始数据
+    POWER_GET_RAW_DATA = 0x00,  // 获取电源原始数据
+    POWER_GET_BASE_DATA = 0x01, // 获取电源基础数据
 
-    POWER_GET_DATA_VOLTAGE = 0x01, // 获取设置电压
-    POWER_SET_DATA_VOLTAGE = 0x02, // 设置电压
-
-    POWER_GET_DATA_CURRENT = 0x03, // 获取设置电流
-    POWER_SET_DATA_CURRENT = 0x04, // 设置电流
-
-    POWER_GET_DATA_POWER = 0x05, // 获取设置功率
-    POWER_SET_DATA_POWER = 0x06, // 设置功率
-
-    POWER_GET_DATA_SWITCH = 0x07, // 获取开关状态
-    POWER_SET_DATA_SWITCH = 0x08, // 设置开关状态
-
-    POWER_GET_DATA_VOLTAGE_MAX = 0x09, // 获取电压上限
-    POWER_SET_DATA_VOLTAGE_MAX = 0x0A, // 设置电压上限
-
-    POWER_GET_DATA_VOLTAGE_MIN = 0x0B, // 获取电压下限
-    POWER_SET_DATA_VOLTAGE_MIN = 0x0C, // 设置电压下限
-
-    POWER_GET_DATA_CURRENT_MAX = 0x0D, // 获取电流上限
-    POWER_SET_DATA_CURRENT_MAX = 0x0E, // 设置电流上限
-
-    POWER_GET_OFFLINE_VOLTAGE = 0x0F, // 获取离线电压
-    POWER_SET_OFFLINE_VOLTAGE = 0x10, // 设置离线电压
-
-    POWER_GET_OFFLINE_CURRENT = 0x11, // 获取离线电流
-    POWER_SET_OFFLINE_CURRENT = 0x12, // 设置离线电流
-
-    POWER_GET_RUN_STATUS = 0x13, // 获取状态
+    POWER_SET_DATA_VOLTAGE = 0x02,     // 设置电压
+    POWER_SET_DATA_CURRENT = 0x03,     // 设置电流
+    POWER_SET_DATA_POWER = 0x04,       // 设置功率
+    POWER_SET_DATA_SWITCH = 0x05,      // 设置开关状态
+    POWER_SET_DATA_VOLTAGE_MAX = 0x06, // 设置电压上限
+    POWER_SET_DATA_VOLTAGE_MIN = 0x07, // 设置电压下限
+    POWER_SET_DATA_CURRENT_MAX = 0x08, // 设置电流上限
+    POWER_SET_OFFLINE_VOLTAGE = 0x09,  // 设置离线电压
+    POWER_SET_OFFLINE_CURRENT = 0x0A,  // 设置离线电流
 
 } ble_app_power_data_t;
 
@@ -145,6 +127,6 @@ typedef struct
 void init_ble_service(void);
 void app_data_handle(uint8_t *ble_data, uint16_t len, void *user_data);
 void app_ble_set_callback(uint8_t mode, bool success, uint8_t *data, uint8_t len);
-bool send_app_data(uint8_t mode, buffer_t *buf);
+bool send_app_data(uint8_t mode, uint16_t status, buffer_t *buf);
 
 #endif // BLE_SERVICE_H

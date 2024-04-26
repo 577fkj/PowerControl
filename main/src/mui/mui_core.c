@@ -1,10 +1,7 @@
 #include "mui_core.h"
 
-#include "mui_defines.h"
-#include "mui_mem.h"
-#include "mui_u8g2.h"
 #include "mui_anim.h"
-// #include "settings.h"
+#include "mui_u8g2.h"
 
 static mui_view_port_t *mui_find_view_port_enabled(mui_t *p_mui, mui_layer_t layer)
 {
@@ -24,6 +21,7 @@ static mui_view_port_t *mui_find_view_port_enabled(mui_t *p_mui, mui_layer_t lay
 
 static void mui_draw_mem_mon(mui_canvas_t *p_canvas)
 {
+    // TODO 内存
     // settings_data_t *p_settings = settings_get_data();
     // if (p_settings->show_mem_usage)
     // {
@@ -235,7 +233,6 @@ void mui_add_view_port(mui_t *p_mui, mui_view_port_t *p_vp, mui_layer_t layer)
 }
 void mui_remove_view_port(mui_t *p_mui, mui_view_port_t *p_vp, mui_layer_t layer)
 {
-    printf("remove %d\n", layer);
     mui_view_port_array_it_t it;
     for (size_t i = 0; i < MUI_LAYER_MAX; i++)
     {
@@ -258,4 +255,10 @@ void mui_update(mui_t *p_mui)
 {
     mui_event_t event = {.id = MUI_EVENT_ID_REDRAW};
     mui_post(p_mui, &event);
+}
+
+void mui_update_now(mui_t *p_mui)
+{
+    mui_event_t event = {.id = MUI_EVENT_ID_REDRAW};
+    mui_event_dispatch_now(&p_mui->event_queue, &event);
 }

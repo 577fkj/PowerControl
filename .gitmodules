@@ -1,0 +1,3 @@
+[submodule "components/mlib"]
+	path = components/mlib
+	url = https://github.com/P-p-H-d/mlib

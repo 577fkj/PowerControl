@@ -2,7 +2,7 @@
 #include "app_module_offset.h"
 #include "app_config.h"
 #include "app_control_bar.h"
-#include "huawei_r48xx.h"
+#include "power_protocol.h"
 
 #include "mini_app_registry.h"
 #include "mini_app_launcher.h"
@@ -34,7 +34,10 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
     mui_canvas_draw_line(p_canvas, 64, 0, 64, 64);
     mui_canvas_set_font(p_canvas, u8g2_font_wqy12_t_gb2312a);
     char txt[10];
-    ConfigStruct *config = get_config();
+    config_t *config = get_config();
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
+    power_protocol_data_t *power_data = power_protocol->get_data();
+
     switch (count)
     {
     case 0:
@@ -63,7 +66,7 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
         sprintf(txt, "%.2f", config->offset_voltage_in);
         mui_canvas_draw_utf8(p_canvas, 17, 35, txt);
         mui_canvas_draw_utf8(p_canvas, 68, 10, "输入电压");
-        sprintf(txt, "%.2fV", power_data.input_voltage);
+        sprintf(txt, "%.2fV", power_data->input_voltage);
         mui_canvas_draw_utf8(p_canvas, 70, 25, txt);
         break;
 
@@ -73,7 +76,7 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
         sprintf(txt, "%.2f", config->offset_current_in);
         mui_canvas_draw_utf8(p_canvas, 17, 35, txt);
         mui_canvas_draw_utf8(p_canvas, 68, 10, "输入电流");
-        sprintf(txt, "%.2fA", power_data.input_current);
+        sprintf(txt, "%.2fA", power_data->input_current);
         mui_canvas_draw_utf8(p_canvas, 75, 25, txt);
         break;
 
@@ -83,8 +86,8 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
         sprintf(txt, "%.2f", config->offset_voltage);
         mui_canvas_draw_utf8(p_canvas, 17, 35, txt);
         mui_canvas_draw_utf8(p_canvas, 68, 10, "显示电压");
-        printf("%.2fV\n", power_data.output_voltage);
-        sprintf(txt, "%.2fV", power_data.output_voltage);
+        LOGI("%.2fV\n", power_data->output_voltage);
+        sprintf(txt, "%.2fV", power_data->output_voltage);
         mui_canvas_draw_utf8(p_canvas, 75, 25, txt);
         break;
 
@@ -94,7 +97,7 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
         sprintf(txt, "%.2f", config->offset_current);
         mui_canvas_draw_utf8(p_canvas, 17, 35, txt);
         mui_canvas_draw_utf8(p_canvas, 80, 10, "显示电流");
-        sprintf(txt, "%.2fA", power_data.output_current);
+        sprintf(txt, "%.2fA", power_data->output_current);
         mui_canvas_draw_utf8(p_canvas, 75, 25, txt);
         break;
 
@@ -111,66 +114,67 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
 
 static void module_offset_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
 {
-    float val = 0.0;
-    switch (event->type)
-    {
-    case INPUT_TYPE_REPEAT:
-    case INPUT_TYPE_SHORT:
-        switch (event->key)
-        {
-        case INPUT_KEY_LEFT:
-            val += 0.1;
-            break;
-        case INPUT_KEY_CENTER:
-            count++;
-            break;
-        case INPUT_KEY_RIGHT:
-            val -= 0.1;
-            break;
-        default:
-            break;
-        }
-        break;
+    // TODO: offset
+    // float val = 0.0;
+    // switch (event->type)
+    // {
+    // case INPUT_TYPE_REPEAT:
+    // case INPUT_TYPE_SHORT:
+    //     switch (event->key)
+    //     {
+    //     case INPUT_KEY_LEFT:
+    //         val += 0.1;
+    //         break;
+    //     case INPUT_KEY_CENTER:
+    //         count++;
+    //         break;
+    //     case INPUT_KEY_RIGHT:
+    //         val -= 0.1;
+    //         break;
+    //     default:
+    //         break;
+    //     }
+    //     break;
 
-    case INPUT_TYPE_LONG:
-        break;
+    // case INPUT_TYPE_LONG:
+    //     break;
 
-    default:
-        break;
-    }
+    // default:
+    //     break;
+    // }
 
-    ConfigStruct *config = get_config();
-    switch (count)
-    {
-    case 0:
-        config->set_offset_voltage += val;
-        set_voltage(config->set_voltage, false, true);
-        break;
-    case 1:
-        config->set_offset_current += val;
-        set_current(config->set_current, false, true);
-        break;
-    case 2:
-        config->offset_voltage_in += val;
-        break;
-    case 3:
-        config->offset_current_in += val;
-        break;
-    case 4:
-        config->offset_voltage += val;
-        break;
-    case 5:
-        config->offset_current += val;
-        break;
-    case 6:
-        config->other_offset += val;
-        break;
-    case 7:
-        save_config(config);
-        mini_app_launcher_run(mini_app_launcher(), MINI_APP_ID_APP_LIST);
-        break;
-    }
-    send_get_data();
+    // ConfigStruct *config = get_config();
+    // switch (count)
+    // {
+    // case 0:
+    //     config->set_offset_voltage += val;
+    //     set_voltage(config->set_voltage, false, true);
+    //     break;
+    // case 1:
+    //     config->set_offset_current += val;
+    //     set_current(config->set_current, false, true);
+    //     break;
+    // case 2:
+    //     config->offset_voltage_in += val;
+    //     break;
+    // case 3:
+    //     config->offset_current_in += val;
+    //     break;
+    // case 4:
+    //     config->offset_voltage += val;
+    //     break;
+    // case 5:
+    //     config->offset_current += val;
+    //     break;
+    // case 6:
+    //     config->other_offset += val;
+    //     break;
+    // case 7:
+    //     save_config(config);
+    mini_app_launcher_run(mini_app_launcher(), MINI_APP_ID_APP_LIST);
+    //     break;
+    // }
+    // send_get_data();
     mui_update(mui());
 }
 

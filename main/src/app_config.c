@@ -4,23 +4,25 @@
 
 #include <string.h>
 
-void load_config(ConfigStruct *config)
+#include "log.h"
+
+void load_config(config_t *config)
 {
     // 打开NVS命名空间
     nvs_handle_t nvsHandle;
     esp_err_t err = nvs_open("storage", NVS_READONLY, &nvsHandle);
     if (err != ESP_OK)
     {
-        printf("Error opening NVS namespace!\n");
+        LOGI("Error opening NVS namespace!\n");
         return;
     }
 
     // 从NVS中读取二进制数据，并将其复制到结构体中
-    size_t dataSize = sizeof(ConfigStruct);
+    size_t dataSize = sizeof(config_t);
     err = nvs_get_blob(nvsHandle, "config", config, &dataSize);
     if (err != ESP_OK)
     {
-        printf("Error reading config from NVS!\n");
+        LOGI("Error reading config from NVS!\n");
     }
 
     // 关闭NVS命名空间
@@ -38,12 +40,12 @@ void config_init()
     }
     ESP_ERROR_CHECK(ret);
 
-    ConfigStruct *config = get_config();
+    config_t *config = get_config();
     load_config(config);
 
     if (config->magic != 0x57)
     {
-        memset(config, 0, sizeof(ConfigStruct));
+        memset(config, 0, sizeof(config_t));
         config->magic = 0x57;
 
         config->set_offset_voltage = 1024.0;
@@ -62,41 +64,41 @@ void config_init()
 
         config->other_offset = 1024.0;
 
-        strcpy(config->ble_name, "HWPower");
+        strcpy(config->ble_name, "PowerControl");
 
         save_config(config);
     }
 }
 
-void save_config(ConfigStruct *config)
+void save_config(config_t *config)
 {
     // 打开NVS命名空间
     nvs_handle_t nvsHandle;
     esp_err_t err = nvs_open("storage", NVS_READWRITE, &nvsHandle);
     if (err != ESP_OK)
     {
-        printf("Error opening NVS namespace!\n");
+        LOGI("Error opening NVS namespace!\n");
         return;
     }
 
     // 将结构体作为二进制数据存储在NVS中
-    err = nvs_set_blob(nvsHandle, "config", config, sizeof(ConfigStruct));
+    err = nvs_set_blob(nvsHandle, "config", config, sizeof(config_t));
     if (err != ESP_OK)
     {
-        printf("Error storing config in NVS!\n");
+        LOGI("Error storing config in NVS!\n");
     }
 
     // 提交更改并关闭NVS命名空间
     err = nvs_commit(nvsHandle);
     if (err != ESP_OK)
     {
-        printf("Error committing NVS!\n");
+        LOGI("Error committing NVS!\n");
     }
     nvs_close(nvsHandle);
 }
 
-ConfigStruct *get_config()
+config_t *get_config()
 {
-    static ConfigStruct config;
+    static config_t config;
     return &config;
 }

@@ -66,6 +66,18 @@ void app_control_bar_set_draw(void *user_data, control_bar_draw_cb_t draw)
     mui_update(mui());
 }
 
+control_bar_draw_cb_t app_control_bar_get_draw()
+{
+    app_control_bar_t *app = mini_app_launcher_get_app_handle(mini_app_launcher(), MINI_APP_ID_CONTROL_BAR);
+    return app->p_control_bar_view->draw_cb;
+}
+
+void *app_control_bar_get_user_data()
+{
+    app_control_bar_t *app = mini_app_launcher_get_app_handle(mini_app_launcher(), MINI_APP_ID_CONTROL_BAR);
+    return app->p_control_bar_view->user_data;
+}
+
 const mini_app_t app_control_bar_info = {.id = MINI_APP_ID_CONTROL_BAR,
                                          .name = "control bar",
                                          .icon = ICON_HOME,
