@@ -40,7 +40,16 @@ void app_module_info_on_run(mini_app_inst_t *p_app_inst)
     mui_view_dispatcher_switch_to_view(p_app_handle->p_view_dispatcher, MODULE_INFO_VIEW_ID_MAIN);
 
     power_protocol_app_t *power_protocol = get_current_power_protocol();
-    power_protocol->draw_module_info(p_app_handle->p_list_view);
+    if (power_protocol->draw_module_info)
+    {
+        power_protocol->draw_module_info(p_app_handle->p_list_view);
+    }
+    else
+    {
+        mui_list_view_add_item(p_app_handle->p_list_view, NULL, "此协议不支持此功能", NULL);
+        mui_list_view_add_item(p_app_handle->p_list_view, NULL, "协议名称", NULL);
+        mui_list_view_add_item(p_app_handle->p_list_view, NULL, power_protocol->name, NULL);
+    }
 }
 
 void app_module_info_on_kill(mini_app_inst_t *p_app_inst)

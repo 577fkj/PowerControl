@@ -9,6 +9,6 @@
 
 void can_init(uint32_t baudrate);
 static void twai_receive_task(void *arg);
-void can_send(uint32_t can_id, uint8_t data[], uint8_t data_length);
+void can_send(uint32_t can_id, const uint8_t data[], uint8_t data_length);
 
 #endif

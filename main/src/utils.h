@@ -24,6 +24,8 @@
 
 uint16_t unpack_uint16_big_endian(const uint8_t *data);
 uint32_t unpack_uint32_big_endian(const uint8_t *data);
+uint16_t unpack_uint16_little_endian(const uint8_t *data);
+uint32_t unpack_uint32_little_endian(const uint8_t *data);
 // void doubleToString(double num, int precision, char *str);
 void hexdump(const void *data, uint16_t size);
 int starts_with(const char *str, const char *prefix);

@@ -10,6 +10,20 @@ typedef struct
     void *user_data;
 } settings_scene_protocol_data_t;
 
+static void settings_scene_protocol_restart_box_cb(mui_msg_box_event_t event, mui_msg_box_t *p_msg_box)
+{
+    esp_restart();
+}
+
+static void settings_scene_protocol_show_restart_box(app_settings_t *app)
+{
+    mui_msg_box_set_header(app->p_msg_box, "提示");
+    mui_msg_box_set_message(app->p_msg_box, "重启控制板");
+    mui_msg_box_set_btn_text(app->p_msg_box, NULL, "确定重启", NULL);
+    mui_msg_box_set_btn_focus(app->p_msg_box, 1);
+    mui_msg_box_set_event_cb(app->p_msg_box, settings_scene_protocol_restart_box_cb);
+}
+
 static void settings_scene_protocol_msg_box_cb(mui_msg_box_event_t event, mui_msg_box_t *p_msg_box)
 {
     settings_scene_protocol_data_t *data = mui_msg_box_get_user_data(p_msg_box);
@@ -19,7 +33,8 @@ static void settings_scene_protocol_msg_box_cb(mui_msg_box_event_t event, mui_ms
         config_t *config = get_config();
         config->power_protocol = data->selection;
         save_config(config);
-        esp_restart();
+        LOGI("Save new protocol %d\n", config->power_protocol);
+        settings_scene_protocol_show_restart_box(app);
         return;
     }
     mui_scene_dispatcher_previous_scene(app->p_scene_dispatcher);

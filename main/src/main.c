@@ -63,7 +63,7 @@ void app_main(void)
     // 加载电源协议
     set_current_power_protocol(config->power_protocol);
     power_protocol_app_t *power_protocol = get_current_power_protocol();
-    LOGI("Load power protocol %s, can speed: %ld, tick rate: %lld\n", power_protocol->name, power_protocol->can_speed, power_protocol->tick_rate);
+    LOGI("Load power protocol %s(%d), can speed: %ld, tick rate: %lld\n", power_protocol->name, config->power_protocol, power_protocol->can_speed, power_protocol->tick_rate);
     can_init(power_protocol->can_speed);
     power_protocol->init();
 

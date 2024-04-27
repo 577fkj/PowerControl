@@ -95,6 +95,8 @@ void save_config(config_t *config)
         LOGI("Error committing NVS!\n");
     }
     nvs_close(nvsHandle);
+
+    LOGI("Save config to NVS!\n");
 }
 
 config_t *get_config()

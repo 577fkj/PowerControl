@@ -1,7 +1,5 @@
 #include "power_protocol.h"
 
-#include "huawei_r48xx.h"
-
 #include "utils.h"
 #include "esp_timer.h"
 
@@ -115,13 +113,23 @@ void check_ack_timeout(ack_dict_t *dict)
     }
 }
 
+#include "huawei_r48xx.h"
+#include "eps6020.h"
+#include "increase.h"
+#include "infy.h"
+#include "zte.h"
+
 const power_protocol_app_t *power_protocol_registry[] = {
     &huawei_r48xx_info,
+    &eps_6020_info,
+    &increase_info,
+    &infy_info,
+    &zte_info,
 };
 
 const uint32_t power_protocol_num = sizeof(power_protocol_registry) / sizeof(power_protocol_registry[0]);
 
-power_protocol_app_t *current_power_protocol;
+const power_protocol_app_t *current_power_protocol;
 
 void set_current_power_protocol(uint8_t power_protocol)
 {
@@ -135,8 +143,8 @@ void set_current_power_protocol(uint8_t power_protocol)
     }
 }
 
-power_protocol_app_t *get_current_power_protocol()
+const power_protocol_app_t *get_current_power_protocol()
 {
 
-    return power_protocol_registry[0];
+    return current_power_protocol;
 }
