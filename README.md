@@ -12,13 +12,15 @@ The project is currently under development, and those who are capable are welcom
 
 # Supported devices
 
-| Device       | Support | Available | Test |
-| ------------ | ------- | --------- | ---- |
-| Huawei R48XX | ✅      | ✅        | ❎   |
-| ZTE ZXD 3000 | ✅      | ❎        | ❎   |
-| EPS6020      | ✅      | ❎        | ❎   |
-| Increase     | ✅      | ❎        | ❎   |
-| INFY         | ✅      | ❎        | ❎   |
+| Device          | Support | Test |
+| --------------- | ------- | ---- |
+| Huawei R48XX    | ✅      | ❎   |
+| Huawei MPPT     | ✅      | ❎   |
+| Huawei C28005G1 | ✅      | ❎   |
+| ZTE ZXD 3000    | ✅      | ❎   |
+| EPS6020         | ✅      | ❎   |
+| Increase        | ✅      | ❎   |
+| INFY            | ✅      | ❎   |
 
 # Project Structure
 
