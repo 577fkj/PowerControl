@@ -79,11 +79,13 @@ void settings_scene_protocol_on_enter(void *user_data)
 {
 
     app_settings_t *app = user_data;
+    config_t *config = get_config();
     for (uint8_t i = 0; i < power_protocol_num; i++)
     {
         mui_list_view_add_item(app->p_list_view, 0xe105, power_protocol_registry[i]->name, (void *)i);
     }
     mui_list_view_add_item(app->p_list_view, 0xe069, "返回", (void *)NULL_USER_DATA);
+    mui_list_view_set_focus(app->p_list_view, config->power_protocol);
 
     mui_list_view_set_selected_cb(app->p_list_view, settings_scene_protocol_list_view_on_selected);
     mui_view_dispatcher_switch_to_view(app->p_view_dispatcher, SETTINGS_VIEW_ID_MAIN);

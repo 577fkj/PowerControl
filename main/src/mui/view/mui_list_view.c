@@ -466,8 +466,8 @@ void mui_list_view_set_focus(mui_list_view_t *p_view, uint16_t focus_index)
     if (focus_index >= 0 && focus_index < mui_list_item_array_size(p_view->items))
     {
         p_view->focus_index = focus_index;
-        uint32_t offset_y = p_view->focus_index * LIST_ITEM_HEIGHT;
-        p_view->scroll_offset = offset_y;
+        // uint32_t offset_y = p_view->focus_index * LIST_ITEM_HEIGHT;
+        // p_view->scroll_offset = offset_y;
     }
     else
     {
