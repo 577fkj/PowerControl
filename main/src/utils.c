@@ -17,6 +17,14 @@ uint16_t unpack_uint16_big_endian(const uint8_t *data)
 #endif
 }
 
+uint16_t unpack_uint16_little_endian(const uint8_t *data)
+{
+    uint16_t result = 0;
+    result |= ((uint16_t)data[1]) << 8;
+    result |= ((uint16_t)data[0]) << 0;
+    return result;
+}
+
 uint32_t unpack_uint32_big_endian(const uint8_t *data)
 {
 #if USE_GCC_BSWAP_FUNCTIONS
@@ -29,6 +37,16 @@ uint32_t unpack_uint32_big_endian(const uint8_t *data)
     result |= ((uint32_t)data[3]) << 0;
     return result;
 #endif
+}
+
+uint32_t unpack_uint32_little_endian(const uint8_t *data)
+{
+    uint32_t result = 0;
+    result |= ((uint32_t)data[3]) << 24;
+    result |= ((uint32_t)data[2]) << 16;
+    result |= ((uint32_t)data[1]) << 8;
+    result |= ((uint32_t)data[0]) << 0;
+    return result;
 }
 
 // 将一个浮点数转换为字符串

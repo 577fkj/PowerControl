@@ -88,20 +88,26 @@ typedef struct
     int64_t time;
 } ack_data_t;
 
+typedef struct
+{
+    float voltage;
+    float current;
+} app_data_t;
+
 DICT_DEF2(ack_dict, uint16_t, M_DEFAULT_OPLIST, ack_data_t *, M_PTR_OPLIST)
 
 extern const uint32_t power_protocol_num;
 extern const power_protocol_app_t *power_protocol_registry[];
 
-void add_ack(ack_dict_t *dict, uint16_t ack_id, callback_function_t callback, void *user_data, uint16_t timeout_ms);
+void ack_init();
 
-void call_ack(ack_dict_t *dict, uint16_t ack_id, void *data);
+void add_ack(uint16_t ack_id, callback_function_t callback, void *user_data, uint16_t timeout_ms);
 
-void del_ack(ack_dict_t *dict, uint16_t ack_id);
+void call_ack(uint16_t ack_id, void *data);
 
-void check_ack_timeout(ack_dict_t *dict);
+void del_ack(uint16_t ack_id);
 
 void set_current_power_protocol(uint8_t power_protocol);
 
-power_protocol_app_t *get_current_power_protocol();
+const power_protocol_app_t *get_current_power_protocol();
 #endif // __POWER_PROTOCOL_H__

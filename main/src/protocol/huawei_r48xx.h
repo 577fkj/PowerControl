@@ -7,8 +7,11 @@
 
 #include "power_protocol.h"
 
-// Cmdid
+// Protocol id
 #define HUAWEI_R48XX_PROTOCOL_ID 0x21
+#define HUAWEI_C28005G1_PROTOCOL_ID 0x0E
+#define HUAWEI_MPPT_PROTOCOL_ID 0x2A
+// Cmdid
 #define HUAWEI_R48XX_MSG_CONTROL_ID 0x80
 #define HUAWEI_R48XX_MSG_CONFIG_ID 0x81
 #define HUAWEI_R48XX_MSG_QUERY_ID 0x82
@@ -65,12 +68,6 @@ typedef enum
 
 typedef struct
 {
-    float output_voltage;
-    float output_current;
-} power_flash_data_t;
-
-typedef struct
-{
     uint16_t rate;
     char version[6];
     char desc[512];
@@ -82,18 +79,7 @@ typedef struct
 } RectifierInfo;
 
 extern const power_protocol_app_t huawei_r48xx_info;
-
-// char *HuaweiEAddr_to_string(const HuaweiEAddr *self);
-uint32_t HuaweiEAddr_pack(const HuaweiEAddr *self);
-void can_data_handle(uint32_t can_id, uint8_t *can_data);
-void HuaweiEAddr_unpack(HuaweiEAddr *self, uint32_t val);
-void send_get_data();
-void send_get_info();
-void send_get_desc();
-void set_voltage(float c, bool perm, bool callback);
-void set_current(float c, bool perm, bool callback);
-// void set_power(float p, bool callback);
-void power_on(bool callback);
-void power_off(bool callback);
+extern const power_protocol_app_t huawei_mppt_info;
+extern const power_protocol_app_t huawei_c28005g1_info;
 
 #endif // __HUAWEI_R48XX_H__
