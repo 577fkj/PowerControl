@@ -7,15 +7,13 @@
 #include "utils.h"
 #include "log.h"
 
-#include "esp_timer.h"
-
 #include "mui_include.h"
 #include "mui_list_view.h"
 
 static RectifierInfo power_info = {0};
 static power_protocol_data_t power_data = {0};
 
-static ack_dict_t ack_dict;
+static uint16_t proto_id = 0x00;
 
 int extractValue(const char *text, const char *key, char **value)
 {
@@ -156,7 +154,7 @@ void HuaweiEAddr_unpack(HuaweiEAddr *self, uint32_t val)
 void huawei_r48xx_send_get_data()
 {
     HuaweiEAddr addr = {
-        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .protoId = proto_id,
         .addr = 0x00,
         .cmdId = HUAWEI_R48XX_MSG_DATA_ID,
         .fromSrc = 0x01,
@@ -170,7 +168,7 @@ void huawei_r48xx_send_get_data()
 void send_get_info()
 {
     HuaweiEAddr addr = {
-        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .protoId = proto_id,
         .addr = 0x00,
         .cmdId = HUAWEI_R48XX_MSG_INFO_ID,
         .fromSrc = 0x01,
@@ -184,7 +182,7 @@ void send_get_info()
 void send_get_desc()
 {
     HuaweiEAddr addr = {
-        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .protoId = proto_id,
         .addr = 0x00,
         .cmdId = HUAWEI_R48XX_MSG_DESC_ID,
         .fromSrc = 0x01,
@@ -198,7 +196,7 @@ void send_get_desc()
 void set_reg(uint8_t reg, uint16_t val, bool callback)
 {
     HuaweiEAddr addr = {
-        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .protoId = proto_id,
         .addr = 0x01, // 0x00 没有回调
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
@@ -212,7 +210,7 @@ void set_reg(uint8_t reg, uint16_t val, bool callback)
 void power_off(bool callback)
 {
     HuaweiEAddr addr = {
-        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .protoId = proto_id,
         .addr = 0x01, // 0x00 没有回调
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
@@ -226,7 +224,7 @@ void power_off(bool callback)
 void power_on(bool callback)
 {
     HuaweiEAddr addr = {
-        .protoId = HUAWEI_R48XX_PROTOCOL_ID,
+        .protoId = proto_id,
         .addr = 0x01, // 0x00 没有回调
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
@@ -420,7 +418,7 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
         if (!h_data.count)
         {
             power_info.desc[offset + 1] = 0x00;
-            call_ack(&ack_dict, HUAWEI_DESC_ACK, power_info.desc);
+            call_ack(HUAWEI_DESC_ACK, power_info.desc);
         }
     }
     break;
@@ -508,15 +506,6 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
     }
 }
 
-void huawei_r48xx_init_power_protocol()
-{
-    ack_dict_init(ack_dict);
-
-    create_timer(ack_check, &check_ack_timeout, ack_dict);
-    esp_err_t err = esp_timer_start_periodic(ack_check_timer_handle, MS2US(50));
-    ESP_ERROR_CHECK(err);
-}
-
 void huawei_r48xx_set_status(bool status)
 {
     if (status)
@@ -539,7 +528,7 @@ void huawei_r48xx_draw_module_info(mui_list_view_t *p_list_view)
     mui_list_view_add_item(p_list_view, 0x0, "等待电源回复...", NULL);
     send_get_desc();
 
-    add_ack(&ack_dict, HUAWEI_DESC_ACK, app_module_info_set_info, p_list_view, 500);
+    add_ack(HUAWEI_DESC_ACK, app_module_info_set_info, p_list_view, 500);
 }
 
 static int tick_count = 0;
@@ -561,6 +550,24 @@ void huawei_r48xx_tick()
     }
 }
 
+void huawei_r48xx_init_power_protocol()
+{
+    proto_id = HUAWEI_R48XX_PROTOCOL_ID;
+    ack_init();
+}
+
+void huawei_mppt_init_power_protocol()
+{
+    proto_id = HUAWEI_MPPT_PROTOCOL_ID;
+    ack_init();
+}
+
+void huawei_c28005g1_init_power_protocol()
+{
+    proto_id = HUAWEI_C28005G1_PROTOCOL_ID;
+    ack_init();
+}
+
 const power_protocol_app_t huawei_r48xx_info = {
     .name = "Huawei r48xx",
     .can_data_handle = huawei_r48xx_can_data_handle,
@@ -571,6 +578,38 @@ const power_protocol_app_t huawei_r48xx_info = {
     .draw_module_info = huawei_r48xx_draw_module_info,
     .loop_get_data = huawei_r48xx_send_get_data,
     .init = huawei_r48xx_init_power_protocol,
+    .get_data = huawei_r48xx_get_data,
+    .tick = huawei_r48xx_tick,
+    .tick_rate = 1000000,
+    .can_speed = 125000,
+};
+
+const power_protocol_app_t huawei_mppt_info = {
+    .name = "Huawei MPPT",
+    .can_data_handle = huawei_r48xx_can_data_handle,
+    .set_status = huawei_r48xx_set_status,
+    .set_current = huawei_r48xx_set_current,
+    .set_voltage = huawei_r48xx_set_voltage,
+    .set_power = NULL,
+    .draw_module_info = huawei_r48xx_draw_module_info,
+    .loop_get_data = huawei_r48xx_send_get_data,
+    .init = huawei_mppt_init_power_protocol,
+    .get_data = huawei_r48xx_get_data,
+    .tick = huawei_r48xx_tick,
+    .tick_rate = 1000000,
+    .can_speed = 125000,
+};
+
+const power_protocol_app_t huawei_c28005g1_info = {
+    .name = "Huawei C28005G1",
+    .can_data_handle = huawei_r48xx_can_data_handle,
+    .set_status = huawei_r48xx_set_status,
+    .set_current = huawei_r48xx_set_current,
+    .set_voltage = huawei_r48xx_set_voltage,
+    .set_power = NULL,
+    .draw_module_info = huawei_r48xx_draw_module_info,
+    .loop_get_data = huawei_r48xx_send_get_data,
+    .init = huawei_c28005g1_init_power_protocol,
     .get_data = huawei_r48xx_get_data,
     .tick = huawei_r48xx_tick,
     .tick_rate = 1000000,

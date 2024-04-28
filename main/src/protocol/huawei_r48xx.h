@@ -7,8 +7,11 @@
 
 #include "power_protocol.h"
 
-// Cmdid
+// Protocol id
 #define HUAWEI_R48XX_PROTOCOL_ID 0x21
+#define HUAWEI_C28005G1_PROTOCOL_ID 0x0E
+#define HUAWEI_MPPT_PROTOCOL_ID 0x2A
+// Cmdid
 #define HUAWEI_R48XX_MSG_CONTROL_ID 0x80
 #define HUAWEI_R48XX_MSG_CONFIG_ID 0x81
 #define HUAWEI_R48XX_MSG_QUERY_ID 0x82
@@ -76,5 +79,7 @@ typedef struct
 } RectifierInfo;
 
 extern const power_protocol_app_t huawei_r48xx_info;
+extern const power_protocol_app_t huawei_mppt_info;
+extern const power_protocol_app_t huawei_c28005g1_info;
 
 #endif // __HUAWEI_R48XX_H__
