@@ -7,16 +7,20 @@
 #define VOLTAGE_OFFSET 1
 #define CURRENT_OFFSET 1
 
-static power_protocol_data_t power_data = {0};
-static app_data_t app_data = {0};
+static uint16_t id = 0;
 
 static const uint8_t empty_data[8] = {0};
+
+static uint32_t get_send_id(uint32_t sid)
+{
+    return sid + id;
+}
 
 void infy_set_status(bool status)
 {
     uint8_t can_data[8] = {0};
     can_data[0] = status ? 0x00 : 0x01;
-    can_send(0x029A3FF0, can_data, 8);
+    can_send(0x029A00F0, can_data, 8);
 }
 
 static void set_voltage_current(float voltage, float current)
@@ -24,28 +28,32 @@ static void set_voltage_current(float voltage, float current)
     uint16_t v = voltage / VOLTAGE_OFFSET * 1000;
     uint16_t a = current / CURRENT_OFFSET * 1000;
     uint8_t can_data[8] = {0};
-    can_data[0] = (uint8_t)(a >> 24);
-    can_data[1] = (uint8_t)(a >> 16);
-    can_data[2] = (uint8_t)(a >> 8);
+    can_data[0] = 0x00;
+
+    can_data[1] = (uint8_t)(a >> 0x10);
+    can_data[2] = (uint8_t)(a >> 0x8);
     can_data[3] = (uint8_t)(a);
 
-    can_data[4] = (uint8_t)(v >> 24);
-    can_data[5] = (uint8_t)(v >> 16);
-    can_data[6] = (uint8_t)(v >> 8);
+    can_data[4] = 0x00;
+    can_data[5] = 0x00;
+
+    can_data[6] = (uint8_t)(v >> 0x8);
     can_data[7] = (uint8_t)(v);
-    can_send(0x029B3FF0, can_data, 8);
+    can_send(get_send_id(0x029C00F0), can_data, 8);
+
+    can_send(get_send_id(0x028600F0), empty_data, 8);
+    can_send(get_send_id(0x028400F0), empty_data, 8);
+    can_send(get_send_id(0x028900F0), empty_data, 8);
 }
 
-void infy_set_voltage(float c, bool perm, bool callback)
+void infy_can_init_handle(uint32_t can_id, uint8_t *can_data)
 {
-    app_data.voltage = c;
-    set_voltage_current(app_data.voltage, app_data.current);
-}
-
-void infy_set_current(float current, bool online, bool callback)
-{
-    app_data.current = current;
-    set_voltage_current(app_data.voltage, app_data.current);
+    if (can_id == 0x028CF00C)
+    {
+        id = 0x0C00;
+    }
+    can_send(0x028A00F0, empty_data, 8);
+    infy_set_status(true);
 }
 
 void infy_can_data_handle(uint32_t can_id, uint8_t *can_data)
@@ -110,10 +118,6 @@ void infy_can_data_handle(uint32_t can_id, uint8_t *can_data)
     }
 }
 
-void infy_send_get_data()
-{
-}
-
 power_protocol_data_t *infy_get_data()
 {
     return &power_data;
@@ -144,23 +148,14 @@ void infy_tick()
     }
 }
 
-void infy_init_power_protocol()
-{
-    config_t *config = get_config();
-    app_data.current = config->set_current;
-    app_data.voltage = config->set_voltage;
-}
-
 const power_protocol_app_t infy_info = {
     .name = "INFY",
+    .can_init_handle = infy_can_init_handle,
     .can_data_handle = infy_can_data_handle,
     .set_status = infy_set_status,
-    .set_current = infy_set_current,
-    .set_voltage = infy_set_voltage,
-    .set_power = NULL,
+    .set_online_voltage_current = set_voltage_current,
     .draw_module_info = NULL,
-    .loop_get_data = infy_send_get_data,
-    .init = infy_init_power_protocol,
+    .init = NULL,
     .get_data = infy_get_data,
     .tick = infy_tick,
     .tick_rate = MS2US(500),

@@ -7,11 +7,6 @@
 #define VOLTAGE_OFFSET 1
 #define CURRENT_OFFSET 1
 
-static uint32_t base_id = 0x1307C080;
-static power_protocol_data_t power_data = {0};
-static app_data_t app_data = {0};
-
-static const uint8_t empty_data[8] = {0};
 static const uint8_t data2[8] = {0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static const uint8_t data3[8] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -20,7 +15,7 @@ void increase_set_status(bool status)
     uint8_t can_data[8] = {0};
     can_data[0] = 0x02;
     can_data[7] = status ? 0x55 : 0xaa;
-    can_send(base_id + 1, can_data, 8);
+    can_send(0x1307c081, can_data, 8);
 }
 
 static void set_voltage_current(float voltage, float current)
@@ -31,26 +26,20 @@ static void set_voltage_current(float voltage, float current)
     can_data[0] = 0x00;
     can_data[1] = 0x00;
 
-    can_data[2] = (uint8_t)(a >> 8);
+    can_data[2] = (uint8_t)(a >> 0x8);
     can_data[3] = (uint8_t)(a);
 
-    can_data[4] = (uint8_t)(v >> 24);
-    can_data[5] = (uint8_t)(v >> 16);
-    can_data[6] = (uint8_t)(v >> 8);
+    can_data[4] = 0X00;
+
+    can_data[5] = (uint8_t)(v >> 0x10);
+    can_data[6] = (uint8_t)(v >> 0x8);
     can_data[7] = (uint8_t)(v);
-    can_send(base_id + 1, can_data, 8);
+    can_send(0x1307c081, can_data, 8);
 }
 
-void increase_set_voltage(float c, bool perm, bool callback)
+void increase_can_init_handle(uint32_t can_id, uint8_t *can_data)
 {
-    app_data.voltage = c;
-    set_voltage_current(app_data.voltage, app_data.current);
-}
-
-static void increase_set_current(float current, bool online, bool callback)
-{
-    app_data.current = current;
-    set_voltage_current(app_data.voltage, app_data.current);
+    increase_set_status(true);
 }
 
 void increase_can_data_handle(uint32_t can_id, uint8_t *can_data)
@@ -60,7 +49,7 @@ void increase_can_data_handle(uint32_t can_id, uint8_t *can_data)
         return;
     }
     uint16_t cid = unpack_uint16_big_endian(can_data);
-    if (can_id == 0x1207C081 && cid == 1)
+    if (can_id == 0x1207C081 && cid == 0x1)
     {
         uint16_t j = unpack_uint16_big_endian(can_data + 2);
         uint16_t k = unpack_uint16_big_endian(can_data + 4);
@@ -98,20 +87,9 @@ void increase_can_data_handle(uint32_t can_id, uint8_t *can_data)
     }
 }
 
-void increase_send_get_data()
-{
-}
-
 power_protocol_data_t *increase_get_data()
 {
     return &power_data;
-}
-
-void increase_init_power_protocol()
-{
-    config_t *config = get_config();
-    app_data.current = config->set_current;
-    app_data.voltage = config->set_voltage;
 }
 
 static int tick_count = 0;
@@ -120,8 +98,8 @@ void increase_tick()
     config_t *config = get_config();
     tick_count++;
 
-    can_send(base_id + 1, data3, 8);
-    can_send(0x13008081, empty_data, 8);
+    can_send(0x1307c081, data3, 8);
+    can_send(0x13008081, NULL, 0);
     can_send(0x1307A081, data2, 8);
 
     switch (tick_count)
@@ -138,14 +116,12 @@ void increase_tick()
 
 const power_protocol_app_t increase_info = {
     .name = "Increase",
+    .can_init_handle = increase_can_init_handle,
     .can_data_handle = increase_can_data_handle,
     .set_status = increase_set_status,
-    .set_current = increase_set_current,
-    .set_voltage = increase_set_voltage,
-    .set_power = NULL,
+    .set_online_voltage_current = set_voltage_current,
     .draw_module_info = NULL,
-    .loop_get_data = increase_send_get_data,
-    .init = increase_init_power_protocol,
+    .init = NULL,
     .get_data = increase_get_data,
     .tick = increase_tick,
     .tick_rate = MS2US(1000),

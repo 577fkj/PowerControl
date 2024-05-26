@@ -65,7 +65,10 @@ void app_main(void)
     power_protocol_app_t *power_protocol = get_current_power_protocol();
     LOGI("Load power protocol %s(%d), can speed: %ld, tick rate: %lld\n", power_protocol->name, config->power_protocol, power_protocol->can_speed, power_protocol->tick_rate);
     can_init(power_protocol->can_speed);
-    power_protocol->init();
+    if (power_protocol->init)
+    {
+        power_protocol->init();
+    }
 
     init_key();
     adc_init();
@@ -76,9 +79,12 @@ void app_main(void)
     fan_set_speed(100);
 
     // 启动定时器 以循环方式启动定时器
-    create_timer(data, &can_tick, NULL);
-    esp_err_t err = esp_timer_start_periodic(data_timer_handle, power_protocol->tick_rate);
-    ESP_ERROR_CHECK(err);
+    if (power_protocol->tick)
+    {
+        create_timer(data, &can_tick, NULL);
+        esp_err_t err = esp_timer_start_periodic(data_timer_handle, power_protocol->tick_rate);
+        ESP_ERROR_CHECK(err);
+    }
 
     mui_t *p_mui = mui();
     p_mui->u8g2 = u8g2;

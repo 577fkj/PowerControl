@@ -165,7 +165,6 @@ static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
                 if (config->set_voltage < config->max_output_voltage)
                 {
                     adjustValue(&config->set_voltage, p_desktop_view->set_pos, true);
-                    power_protocol->set_voltage(config->set_voltage, false, true);
                 }
             }
             else if (p_desktop_view->set_event == SET_CURRENT)
@@ -173,9 +172,9 @@ static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
                 if (config->set_current < config->max_output_current)
                 {
                     adjustValue(&config->set_current, p_desktop_view->set_pos - 1, true);
-                    power_protocol->set_current(config->set_current, false, true);
                 }
             }
+            power_protocol->set_online_voltage_current(config->set_voltage, config->set_current);
             break;
         case INPUT_KEY_RIGHT:
             if (p_desktop_view->set_event == SET_VOLTAGE)
@@ -183,7 +182,6 @@ static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
                 if (config->min_output_voltage < config->set_voltage)
                 {
                     adjustValue(&config->set_voltage, p_desktop_view->set_pos, false);
-                    power_protocol->set_voltage(config->set_voltage, false, true);
                 }
             }
             else if (p_desktop_view->set_event == SET_CURRENT)
@@ -191,13 +189,13 @@ static void desktop_view_on_input(mui_view_t *p_view, mui_input_event_t *event)
                 if (config->min_output_current < config->set_current)
                 {
                     adjustValue(&config->set_current, p_desktop_view->set_pos - 1, false);
-                    power_protocol->set_current(config->set_current, false, true);
                 }
             }
             else
             {
                 mini_app_launcher_run(mini_app_launcher(), MINI_APP_ID_APP_LIST);
             }
+            power_protocol->set_online_voltage_current(config->set_voltage, config->set_current);
             break;
         case INPUT_KEY_CENTER:
         {

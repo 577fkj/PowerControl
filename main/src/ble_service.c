@@ -43,19 +43,19 @@ void ble_app_power_data_callback(uint8_t *s_data, uint16_t len)
     case POWER_SET_DATA_VOLTAGE: // 设置电压
     {
         float v = buff_get_float(&data_read);
-        power_protocol->set_voltage(v, false, true);
-
         config->set_voltage = v;
         save_config(config);
+
+        power_protocol->set_online_voltage_current(config->set_voltage, config->set_current);
     }
     break;
     case POWER_SET_DATA_CURRENT: // 设置电流
     {
         float c = buff_get_float(&data_read);
-        power_protocol->set_current(c, false, true);
-
         config->set_current = c;
         save_config(config);
+
+        power_protocol->set_online_voltage_current(config->set_voltage, config->set_current);
     }
     break;
 

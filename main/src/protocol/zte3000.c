@@ -1,4 +1,4 @@
-#include "eps6020.h"
+#include "zte3000.h"
 #include "can.h"
 #include "utils.h"
 
@@ -8,20 +8,23 @@
 #define CURRENT_OFFSET 1
 #define INPUT_CURRENT_OFFSET 1
 
-static power_protocol_data_t power_data = {0};
 static app_data_t app_data = {0};
-
 static const uint8_t data[8] = {0x78, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 static uint8_t id = 0;
 
-void zte_set_status(bool status)
+static uint32_t get_send_id(uint32_t sid)
+{
+    return sid + (id * 0x100);
+}
+
+void zte3000_set_status(bool status)
 {
     uint8_t can_data[8] = {0};
     can_data[0] = 0x78;
     can_data[1] = 0x30;
     can_data[2] = status ? 0x00 : 0x01;
-    can_send(0x12780030 + id, can_data, 8);
+    can_send(get_send_id(0x12780030), can_data, 8);
 }
 
 static void set_voltage_current(float voltage, float current)
@@ -33,17 +36,13 @@ static void set_voltage_current(float voltage, float current)
     can_data[1] = 0x20;
     can_data[2] = 0x02;
     can_data[3] = 0x58;
-    can_data[4] = (uint8_t)(v >> 8);
+    can_data[4] = (uint8_t)(v >> 0x8);
     can_data[5] = (uint8_t)(v);
 
-    can_data[6] = (uint8_t)(a >> 8);
+    can_data[6] = (uint8_t)(a >> 0x8);
     can_data[7] = (uint8_t)(a);
 
     can_send(0x12780020, can_data, 8); // 在线
-
-    can_data[1] = 0x22;
-
-    can_send(0x12780022, can_data, 8); // 离线
     /* 延时多久之后开始执行调压?
         TxData[0] = 0x78;
         TxData[1] = 0x21;
@@ -57,25 +56,34 @@ static void set_voltage_current(float voltage, float current)
     */
 }
 
-void zte_set_voltage(float c, bool perm, bool callback)
+static void set_offline_voltage_current(float voltage, float current)
 {
-    app_data.voltage = c;
+    uint16_t v = voltage / VOLTAGE_OFFSET * 1000;
+    uint16_t a = current / CURRENT_OFFSET * 1000;
+    uint8_t can_data[8] = {0};
+    can_data[0] = 0x78;
+    can_data[1] = 0x22;
+    can_data[2] = 0x02;
+    can_data[3] = 0x58;
+    can_data[4] = (uint8_t)(v >> 0x8);
+    can_data[5] = (uint8_t)(v);
+
+    can_data[6] = (uint8_t)(a >> 0x8);
+    can_data[7] = (uint8_t)(a);
+
+    can_send(0x12780022, can_data, 8); // 离线
+}
+
+void zte3000_can_init_handle(uint32_t can_id, uint8_t *can_data)
+{
+    id = (can_id >> 0x10) & 0xFF;
+    zte3000_set_status(true);
     set_voltage_current(app_data.voltage, app_data.current);
 }
 
-void zte_set_current(float current, bool online, bool callback)
+void zte3000_can_data_handle(uint32_t can_id, uint8_t *can_data)
 {
-    app_data.current = current;
-    set_voltage_current(app_data.current, app_data.current);
-}
-
-void zte_can_data_handle(uint32_t can_id, uint8_t *can_data)
-{
-    if (id == 0)
-    {
-        id = ((can_id >> 16) & 0xFF) * 0x100;
-    }
-    if (can_id != 0x1a007810 + (id * 0x100))
+    if (can_id != 0x1a007810 + (id * 0x1000))
     {
         return;
     }
@@ -110,16 +118,12 @@ void zte_can_data_handle(uint32_t can_id, uint8_t *can_data)
     }
 }
 
-void zte_send_get_data()
-{
-}
-
-power_protocol_data_t *zte_get_data()
+power_protocol_data_t *zte3000_get_data()
 {
     return &power_data;
 }
 
-void zte_init_power_protocol()
+void zte3000_init_power_protocol()
 {
     config_t *config = get_config();
     app_data.current = config->set_current;
@@ -127,14 +131,14 @@ void zte_init_power_protocol()
 }
 
 static int tick_count = 0;
-void zte_tick()
+void zte3000_tick()
 {
     config_t *config = get_config();
     tick_count++;
 
     if (id != 0) // 1000ms
     {
-        can_send(0x1A780012 + id, data, 8);
+        can_send(get_send_id(0x1A780012), data, 8);
     }
 
     switch (tick_count)
@@ -148,18 +152,17 @@ void zte_tick()
     }
 }
 
-const power_protocol_app_t zte_info = {
+const power_protocol_app_t zte3000_info = {
     .name = "ZTE ZXD3000",
-    .can_data_handle = zte_can_data_handle,
-    .set_status = zte_set_status,
-    .set_current = zte_set_current,
-    .set_voltage = zte_set_voltage,
-    .set_power = NULL,
+    .can_init_handle = zte3000_can_init_handle,
+    .can_data_handle = zte3000_can_data_handle,
+    .set_status = zte3000_set_status,
+    .set_online_voltage_current = set_voltage_current,
+    .set_offline_voltage_current = set_offline_voltage_current,
     .draw_module_info = NULL,
-    .loop_get_data = zte_send_get_data,
-    .init = zte_init_power_protocol,
-    .get_data = zte_get_data,
-    .tick = zte_tick,
+    .init = zte3000_init_power_protocol,
+    .get_data = zte3000_get_data,
+    .tick = zte3000_tick,
     .tick_rate = MS2US(1000),
     .can_speed = 500000,
 };

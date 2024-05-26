@@ -131,6 +131,7 @@ void can_init(uint32_t baudrate)
     xTaskCreatePinnedToCore(twai_receive_task, "TWAI_rx", 1024 * 4, NULL, 10, NULL, tskNO_AFFINITY);
 }
 
+static bool protocol_init = false;
 static void twai_receive_task(void *arg)
 {
     twai_message_t r1;
@@ -142,6 +143,11 @@ static void twai_receive_task(void *arg)
         {
         case ESP_OK:
             // printf_msg(RECEIVEMSG, &r1);
+            if (!protocol_init)
+            {
+                power_protocol->can_init_handle(r1.identifier, r1.data);
+                protocol_init = true;
+            }
             power_protocol->can_data_handle(r1.identifier, r1.data);
             break;
         case ESP_ERR_TIMEOUT:

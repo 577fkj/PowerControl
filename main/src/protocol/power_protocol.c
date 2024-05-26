@@ -168,7 +168,15 @@ void ack_init()
 #include "eps6020.h"
 #include "increase.h"
 #include "infy.h"
-#include "zte.h"
+#include "zte3000.h"
+#include "zte4875.h"
+
+power_protocol_data_t power_data = {0}; // global power data
+
+power_protocol_data_t *get_data()
+{
+    return &power_data;
+}
 
 const power_protocol_app_t *power_protocol_registry[] = {
     &huawei_r48xx_info,
@@ -177,12 +185,13 @@ const power_protocol_app_t *power_protocol_registry[] = {
     &eps_6020_info,
     &increase_info,
     &infy_info,
-    &zte_info,
+    &zte3000_info,
+    &zte4875_info,
 };
 
 const uint32_t power_protocol_num = sizeof(power_protocol_registry) / sizeof(power_protocol_registry[0]);
 
-const power_protocol_app_t *current_power_protocol;
+power_protocol_app_t *current_power_protocol;
 
 void set_current_power_protocol(uint8_t power_protocol)
 {
@@ -194,10 +203,14 @@ void set_current_power_protocol(uint8_t power_protocol)
     {
         current_power_protocol = power_protocol_registry[0];
     }
+
+    if (!current_power_protocol->get_data)
+    {
+        current_power_protocol->get_data = get_data;
+    }
 }
 
-const power_protocol_app_t *get_current_power_protocol()
+power_protocol_app_t *get_current_power_protocol()
 {
-
     return current_power_protocol;
 }

@@ -11,7 +11,6 @@
 #include "mui_list_view.h"
 
 static RectifierInfo power_info = {0};
-static power_protocol_data_t power_data = {0};
 
 static uint16_t proto_id = 0x00;
 
@@ -193,11 +192,11 @@ void send_get_desc()
     can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
-void set_reg(uint8_t reg, uint16_t val, bool callback)
+void set_reg(uint8_t reg, uint16_t val)
 {
     HuaweiEAddr addr = {
         .protoId = proto_id,
-        .addr = 0x01, // 0x00 没有回调
+        .addr = 0x01, // 0x00 广播，电源不会回复
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
         .rev = 0x3F,
@@ -207,11 +206,11 @@ void set_reg(uint8_t reg, uint16_t val, bool callback)
     can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
-void power_off(bool callback)
+void power_off()
 {
     HuaweiEAddr addr = {
         .protoId = proto_id,
-        .addr = 0x01, // 0x00 没有回调
+        .addr = 0x01, // 0x00 广播，电源不会回复
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
         .rev = 0x3F,
@@ -221,11 +220,11 @@ void power_off(bool callback)
     can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
-void power_on(bool callback)
+void power_on()
 {
     HuaweiEAddr addr = {
         .protoId = proto_id,
-        .addr = 0x01, // 0x00 没有回调
+        .addr = 0x01, // 0x00 广播，电源不会回复
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
         .rev = 0x3F,
@@ -235,18 +234,30 @@ void power_on(bool callback)
     can_send(HuaweiEAddr_pack(&addr), data, 8);
 }
 
-void huawei_r48xx_set_current(float c, bool perm, bool callback)
+void huawei_r48xx_set_current(float c, bool online)
 {
     uint16_t i = c * get_config()->set_offset_current;
-    uint8_t reg = perm ? 0x04 : 0x03;
-    set_reg(reg, i, callback);
+    uint8_t reg = online ? 0x03 : 0x04;
+    set_reg(reg, i);
 }
 
-void huawei_r48xx_set_voltage(float c, bool perm, bool callback)
+void huawei_r48xx_set_voltage(float c, bool online)
 {
     uint16_t i = c * get_config()->set_offset_voltage;
-    uint8_t reg = perm ? 0x01 : 0x00;
-    set_reg(reg, i, callback);
+    uint8_t reg = online ? 0x00 : 0x01;
+    set_reg(reg, i);
+}
+
+void huawei_r48xx_set_online_voltage_current(float voltage, float current)
+{
+    huawei_r48xx_set_voltage(voltage, true);
+    huawei_r48xx_set_current(current, true);
+}
+
+void huawei_r48xx_set_offline_voltage_current(float voltage, float current)
+{
+    huawei_r48xx_set_voltage(voltage, false);
+    huawei_r48xx_set_current(current, false);
 }
 
 // void set_power(float p, bool perm, bool callback)
@@ -518,11 +529,6 @@ void huawei_r48xx_set_status(bool status)
     }
 }
 
-power_protocol_data_t *huawei_r48xx_get_data()
-{
-    return &power_data;
-}
-
 void huawei_r48xx_draw_module_info(mui_list_view_t *p_list_view)
 {
     mui_list_view_add_item(p_list_view, 0x0, "等待电源回复...", NULL);
@@ -541,8 +547,8 @@ void huawei_r48xx_tick()
     switch (tick_count)
     {
     case 10:
-        huawei_r48xx_set_voltage(config->set_voltage, false, true);
-        huawei_r48xx_set_current(config->set_current, false, true);
+        huawei_r48xx_set_voltage(config->set_voltage, true);
+        huawei_r48xx_set_current(config->set_current, true);
         tick_count = 0;
         break;
     default:
@@ -568,17 +574,66 @@ void huawei_c28005g1_init_power_protocol()
     ack_init();
 }
 
+void huawei_r48xx_can_init_handle()
+{
+    huawei_r48xx_set_status(true);
+
+    uint8_t data[8];
+    data[0] = 0x01;
+    data[1] = 0x02;
+    data[6] = 0xec;
+    can_send(0x108181fe, data, 8);
+
+    memset(data, 0, 8);
+    data[0] = 0x01;
+    data[1] = 0x09;
+    can_send(0x108181fe, data, 8);
+
+    memset(data, 0, 8);
+    data[0] = 0x01;
+    data[1] = 0x0c;
+    can_send(0x108181fe, data, 8);
+
+    memset(data, 0, 8);
+    data[0] = 0x01;
+    data[1] = 0x0d;
+    can_send(0x108181fe, data, 8);
+
+    memset(data, 0, 8);
+    data[0] = 0x01;
+    data[1] = 0x01;
+    data[6] = 0xd6;
+    can_send(0x108181fe, data, 8);
+
+    memset(data, 0, 8);
+    data[0] = 0x01;
+    data[1] = 0x04;
+    data[7] = 0x94;
+    can_send(0x108181fe, data, 8);
+
+    memset(data, 0, 8);
+    data[0] = 0x01;
+    data[1] = 0x06;
+    data[6] = 0x04;
+    can_send(0x108181fe, data, 8);
+
+    memset(data, 0, 8);
+    data[0] = 0x01;
+    data[1] = 0x0c;
+    data[7] = 0x00; // TODO: soft_start_time
+    can_send(0x108180fe, data, 8);
+}
+
 const power_protocol_app_t huawei_r48xx_info = {
     .name = "Huawei r48xx",
+    .can_init_handle = huawei_r48xx_can_init_handle,
     .can_data_handle = huawei_r48xx_can_data_handle,
     .set_status = huawei_r48xx_set_status,
-    .set_current = huawei_r48xx_set_current,
-    .set_voltage = huawei_r48xx_set_voltage,
-    .set_power = NULL,
+    .set_online_voltage_current = huawei_r48xx_set_online_voltage_current,
+    .set_offline_voltage_current = huawei_r48xx_set_offline_voltage_current,
     .draw_module_info = huawei_r48xx_draw_module_info,
-    .loop_get_data = huawei_r48xx_send_get_data,
     .init = huawei_r48xx_init_power_protocol,
-    .get_data = huawei_r48xx_get_data,
+    .get_data = NULL,
     .tick = huawei_r48xx_tick,
     .tick_rate = 1000000,
     .can_speed = 125000,
@@ -586,15 +641,14 @@ const power_protocol_app_t huawei_r48xx_info = {
 
 const power_protocol_app_t huawei_mppt_info = {
     .name = "Huawei MPPT",
+    .can_init_handle = huawei_r48xx_can_init_handle,
     .can_data_handle = huawei_r48xx_can_data_handle,
     .set_status = huawei_r48xx_set_status,
-    .set_current = huawei_r48xx_set_current,
-    .set_voltage = huawei_r48xx_set_voltage,
-    .set_power = NULL,
+    .set_online_voltage_current = huawei_r48xx_set_online_voltage_current,
+    .set_offline_voltage_current = huawei_r48xx_set_offline_voltage_current,
     .draw_module_info = huawei_r48xx_draw_module_info,
-    .loop_get_data = huawei_r48xx_send_get_data,
     .init = huawei_mppt_init_power_protocol,
-    .get_data = huawei_r48xx_get_data,
+    .get_data = NULL,
     .tick = huawei_r48xx_tick,
     .tick_rate = 1000000,
     .can_speed = 125000,
@@ -602,15 +656,14 @@ const power_protocol_app_t huawei_mppt_info = {
 
 const power_protocol_app_t huawei_c28005g1_info = {
     .name = "Huawei C28005G1",
+    .can_init_handle = huawei_r48xx_can_init_handle,
     .can_data_handle = huawei_r48xx_can_data_handle,
     .set_status = huawei_r48xx_set_status,
-    .set_current = huawei_r48xx_set_current,
-    .set_voltage = huawei_r48xx_set_voltage,
-    .set_power = NULL,
+    .set_online_voltage_current = huawei_r48xx_set_online_voltage_current,
+    .set_offline_voltage_current = huawei_r48xx_set_offline_voltage_current,
     .draw_module_info = huawei_r48xx_draw_module_info,
-    .loop_get_data = huawei_r48xx_send_get_data,
     .init = huawei_c28005g1_init_power_protocol,
-    .get_data = huawei_r48xx_get_data,
+    .get_data = NULL,
     .tick = huawei_r48xx_tick,
     .tick_rate = 1000000,
     .can_speed = 125000,
