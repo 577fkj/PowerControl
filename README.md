@@ -45,7 +45,7 @@ Project
 # Credits
 
 - [Huawei protocol](https://github.com/BotoX/huawei-r48xx-esp32)
-- [Other protocol](https://github.com/577fkj/Dump-CANControl)
+- [Other protocol](https://github.com/577fkj/CANControl-reverse)
 - [mui](https://github.com/solosky/pixl.js)
 - [mlib](https://github.com/P-p-H-d/mlib)
 - [u8g2](https://github.com/olikraus/u8g2)
