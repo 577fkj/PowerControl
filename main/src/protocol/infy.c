@@ -1,4 +1,4 @@
-#include "eps6020.h"
+#include "infy.h"
 #include "can.h"
 #include "utils.h"
 

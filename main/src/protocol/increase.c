@@ -1,4 +1,4 @@
-#include "eps6020.h"
+#include "increase.h"
 #include "can.h"
 #include "utils.h"
 
@@ -10,6 +10,19 @@
 static const uint8_t data2[8] = {0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 读取输入电压值
 static const uint8_t data3[8] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 读取模块信息
 
+uint32_t IncreaseEAddr_pack(IncreaseEAddr *self)
+{
+    return (self->is_recv ? 0x12 : 0x13) << 24 | (self->command & 0xFFF) << 11 | (self->group & 0x0F) << 7 | (self->addr & 0x7F);
+}
+
+void IncreaseEAddr_unpack(IncreaseEAddr *self, uint32_t val)
+{
+    self->addr = val & 0x7F;
+    self->group = (val >> 7) & 0x0F;
+    self->command = (val >> 11) & 0xFFF;
+    self->is_recv = ((val >> 24) & 0x1F) == 0x12;
+}
+
 void increase_set_status(bool status)
 {
     uint8_t can_data[8] = {0};
@@ -20,17 +33,16 @@ void increase_set_status(bool status)
 
 static void set_voltage_current(float voltage, float current)
 {
-    uint16_t v = voltage / VOLTAGE_OFFSET * 1000;
-    uint16_t a = current / CURRENT_OFFSET * 1000;
+    uint32_t v = voltage / VOLTAGE_OFFSET * 1000;
+    uint32_t a = current / CURRENT_OFFSET * 1000;
     uint8_t can_data[8] = {0};
     can_data[0] = 0x00;
-    can_data[1] = 0x00;
 
+    can_data[1] = (uint8_t)(a >> 0x10);
     can_data[2] = (uint8_t)(a >> 0x8);
     can_data[3] = (uint8_t)(a);
 
-    can_data[4] = 0X00;
-
+    can_data[4] = (uint8_t)(v >> 0x18);
     can_data[5] = (uint8_t)(v >> 0x10);
     can_data[6] = (uint8_t)(v >> 0x8);
     can_data[7] = (uint8_t)(v);
