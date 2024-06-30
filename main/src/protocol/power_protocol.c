@@ -1,6 +1,6 @@
 #include "power_protocol.h"
 
-#include "utils.h"
+#include "../utils.h"
 #include "esp_timer.h"
 
 #include "freertos/semphr.h"
