@@ -65,7 +65,7 @@ typedef struct
     set_voltage_current_t set_offline_voltage_current; // 设置离线电压电流
     draw_module_info_t draw_module_info;               // 绘制模块信息
     init_t init;                                       // 初始化
-    get_data_t get_data;                               // 获取电源数据，NULL着自动获取
+    get_data_t get_data;                               // 获取电源数据
     tick_t tick;                                       // 定时器回调
     uint64_t tick_rate;                                // 1000000 = 1s 定时器周期
     uint32_t can_speed;                                // CAN波特率
