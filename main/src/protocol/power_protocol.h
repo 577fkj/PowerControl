@@ -94,6 +94,8 @@ extern const power_protocol_app_t *power_protocol_registry[];
 
 extern power_protocol_data_t power_data;
 
+power_protocol_data_t *default_get_data();
+
 void ack_init();
 
 void add_ack(uint16_t ack_id, callback_function_t callback, void *user_data, uint16_t timeout_ms);
@@ -104,5 +106,5 @@ void del_ack(uint16_t ack_id);
 
 void set_current_power_protocol(uint8_t power_protocol);
 
-power_protocol_app_t *get_current_power_protocol();
+const power_protocol_app_t *get_current_power_protocol();
 #endif // __POWER_PROTOCOL_H__

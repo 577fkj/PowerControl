@@ -173,7 +173,7 @@ void ack_init()
 
 power_protocol_data_t power_data = {0}; // global power data
 
-power_protocol_data_t *get_data()
+power_protocol_data_t *default_get_data()
 {
     return &power_data;
 }
@@ -191,7 +191,7 @@ const power_protocol_app_t *power_protocol_registry[] = {
 
 const uint32_t power_protocol_num = sizeof(power_protocol_registry) / sizeof(power_protocol_registry[0]);
 
-power_protocol_app_t *current_power_protocol;
+const power_protocol_app_t *current_power_protocol;
 
 void set_current_power_protocol(uint8_t power_protocol)
 {
@@ -203,14 +203,9 @@ void set_current_power_protocol(uint8_t power_protocol)
     {
         current_power_protocol = power_protocol_registry[0];
     }
-
-    if (!current_power_protocol->get_data)
-    {
-        current_power_protocol->get_data = get_data;
-    }
 }
 
-power_protocol_app_t *get_current_power_protocol()
+const power_protocol_app_t *get_current_power_protocol()
 {
     return current_power_protocol;
 }
