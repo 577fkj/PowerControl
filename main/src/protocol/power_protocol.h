@@ -77,7 +77,7 @@ typedef struct
 {
     callback_function_t callback;
     void *user_data;
-    uint16_t timeout;
+    int64_t timeout;
     int64_t time;
 } ack_data_t;
 

@@ -49,11 +49,11 @@ void add_ack(uint16_t ack_id, callback_function_t callback, void *user_data, uin
 
     ack_data_t **aack_data = ack_dict_get(ack_dict, ack_id);
     ack_data_t *ack_data = NULL;
-    if (ack_data)
+    if (aack_data)
     {
         ack_data = *aack_data;
     }
-    if (!ack_data)
+    else
     {
         ack_data = malloc(sizeof(ack_data_t));
     }
@@ -74,7 +74,7 @@ void call_ack(uint16_t ack_id, void *data)
 
     ack_data_t **aack_data = ack_dict_get(ack_dict, ack_id);
     ack_data_t *ack_data = NULL;
-    if (ack_data)
+    if (aack_data)
     {
         ack_data = *aack_data;
     }
@@ -102,7 +102,7 @@ void del_ack(uint16_t ack_id)
 
     ack_data_t **aack_data = ack_dict_get(ack_dict, ack_id);
     ack_data_t *ack_data = NULL;
-    if (ack_data)
+    if (aack_data)
     {
         ack_data = *aack_data;
     }

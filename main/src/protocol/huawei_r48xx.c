@@ -534,7 +534,7 @@ void huawei_r48xx_draw_module_info(mui_list_view_t *p_list_view)
     mui_list_view_add_item(p_list_view, 0x0, "等待电源回复...", NULL);
     send_get_desc();
 
-    add_ack(HUAWEI_DESC_ACK, app_module_info_set_info, p_list_view, 500);
+    add_ack(HUAWEI_DESC_ACK, app_module_info_set_info, p_list_view, 2000);
 }
 
 static int tick_count = 0;
