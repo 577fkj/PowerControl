@@ -142,8 +142,11 @@ static void twai_receive_task(void *arg)
         switch (err)
         {
         case ESP_OK:
-            // printf_msg(RECEIVEMSG, &r1);
-            if (!protocol_init)
+            // LOGI("Receive ID: 0x%08lx, DLC: %d, Data: %02x %02x %02x %02x %02x %02x %02x %02x\n",
+            //      r1.identifier, r1.data_length_code,
+            //      r1.data[0], r1.data[1], r1.data[2], r1.data[3],
+            //      r1.data[4], r1.data[5], r1.data[6], r1.data[7]);
+            if (!protocol_init && power_protocol->can_init_handle != NULL)
             {
                 power_protocol->can_init_handle(r1.identifier, r1.data);
                 protocol_init = true;

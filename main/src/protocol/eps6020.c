@@ -132,4 +132,9 @@ const power_protocol_app_t eps_6020_info = {
     .tick = eps_6020_tick,
     .tick_rate = MS2US(500),
     .can_speed = 125000,
+    .base_voltage_info = {
+        .base_voltage = 55.0,
+        .min_voltage = 44.0,
+        .max_voltage = 61.5,
+    },
 };

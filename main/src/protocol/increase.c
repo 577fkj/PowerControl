@@ -138,4 +138,9 @@ const power_protocol_app_t increase_info = {
     .tick = increase_tick,
     .tick_rate = MS2US(1000),
     .can_speed = 125000,
+    .base_voltage_info = {
+        .base_voltage = 0.0,
+        .min_voltage = 20.0,
+        .max_voltage = 100.0,
+    },
 };

@@ -43,26 +43,31 @@ void config_init()
     config_t *config = get_config();
     load_config(config);
 
-    if (config->magic != 0x57)
+    if (config->magic != 0x01)
     {
         memset(config, 0, sizeof(config_t));
-        config->magic = 0x57;
+        config->magic = 0x01;
 
-        config->set_offset_voltage = 1024.0;
-        config->set_offset_current = 30.0;
-        config->offset_voltage = 1024.0;
-        config->offset_current = 30.0;
-
-        config->max_output_voltage = 58.5;
+        // 默认配置
+        config->max_output_voltage = 100.0;
         config->max_output_current = 50.0;
 
-        config->min_output_voltage = 41.1;
+        config->min_output_voltage = 0.0;
         config->min_output_current = 0.0;
 
-        config->offset_voltage_in = 1024.0;
-        config->offset_current_in = 30.0;
+        config->set_voltage = 50.0;
+        config->set_current = 10.0;
 
-        config->other_offset = 1024.0;
+        // 默认偏移
+        config->set_offset_voltage = 1.0;
+        config->set_offset_current = 1.0;
+        config->display_offset_voltage = 1.0;
+        config->display_offset_current = 1.0;
+
+        config->offset_voltage_in = 1.0;
+        config->offset_current_in = 1.0;
+
+        config->other_offset = 1.0;
 
         strcpy(config->ble_name, "PowerControl");
 

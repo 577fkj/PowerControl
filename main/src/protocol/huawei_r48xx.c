@@ -236,14 +236,14 @@ void power_on()
 
 void huawei_r48xx_set_current(float c, bool online)
 {
-    uint16_t i = c * get_config()->set_offset_current;
+    uint16_t i = (c / get_config()->set_offset_current) * MAX_CURRENT_OFFSET;
     uint8_t reg = online ? 0x03 : 0x04;
     set_reg(reg, i);
 }
 
 void huawei_r48xx_set_voltage(float c, bool online)
 {
-    uint16_t i = c * get_config()->set_offset_voltage;
+    uint16_t i = (c / get_config()->set_offset_voltage) * RATIO_OFFSER;
     uint8_t reg = online ? 0x00 : 0x01;
     set_reg(reg, i);
 }
@@ -280,7 +280,7 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
             // power_data.status = POWER_STATUS_POWER_ON;
             LOGI("Power ready\n");
             power_data.status = can_data[5] == 1 ? POWER_STATUS_POWER_ON : POWER_STATUS_POWER_OFF;
-            power_data.output_current = unpack_uint16_big_endian(can_data + 6) / config->offset_current;
+            power_data.output_current = (unpack_uint16_big_endian(can_data + 6) / MAX_CURRENT_OFFSET) * config->display_offset_current;
             if (h_data.fromSrc == 0x00)
             {
                 power_data.amp_hours += power_data.output_current * 0.377; // 377ms
@@ -302,41 +302,41 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
         switch (cid)
         {
         case 0x170:
-            power_data.input_power = val / RATIO_MULTIPLIER;
+            power_data.input_power = val / RATIO_OFFSER;
             break;
         case 0x171:
-            power_data.input_frequency = val / RATIO_MULTIPLIER;
+            power_data.input_frequency = val / RATIO_OFFSER;
             break;
         case 0x172:
-            power_data.input_current = val / config->offset_current_in;
+            power_data.input_current = val / RATIO_OFFSER;
             break;
         case 0x173:
-            power_data.output_power = val / RATIO_MULTIPLIER;
+            power_data.output_power = ((val / RATIO_OFFSER) * config->display_offset_voltage) * config->display_offset_current;
             break;
         case 0x174:
-            power_data.efficiency = (val / RATIO_MULTIPLIER) * 100;
+            power_data.efficiency = (val / RATIO_OFFSER) * 100;
             break;
         case 0x175:
-            power_data.output_voltage = val / config->offset_voltage;
+            power_data.output_voltage = (val / RATIO_OFFSER) * config->display_offset_voltage;
             break;
         case 0x176:
-            power_info.max_output_current = val / MAX_CURRENT_MULTIPLIER;
+            power_info.max_output_current = val / MAX_CURRENT_OFFSET;
             break;
         case 0x178:
             power_data.input_voltage = val / config->offset_voltage_in;
             break;
         case 0x17F:
-            power_data.output_temp = val / RATIO_MULTIPLIER;
+            power_data.output_temp = val / RATIO_OFFSER;
             break;
         case 0x180:
-            power_data.input_temp = val / RATIO_MULTIPLIER;
+            power_data.input_temp = val / RATIO_OFFSER;
             break;
         case 0x181:
             // hexdump(can_data, 8);
             power_info.current_limit = val / 100;
             break; // 限流点? 输出电流?
         case 0x182:
-            power_data.output_current = val / config->offset_current;
+            power_data.output_current = (val / RATIO_OFFSER) * config->display_offset_current;
             break;
         case 0x10E:
             power_info.run_hour = val;
@@ -442,11 +442,11 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
         {
         case 0x01:
         {
-            power_info.default_output_voltage = val / RATIO_MULTIPLIER;
+            power_info.default_output_voltage = val / RATIO_OFFSER;
         }
         case 0x04:
         {
-            power_info.default_output_current = val / MAX_CURRENT_MULTIPLIER;
+            power_info.default_output_current = val / MAX_CURRENT_OFFSET;
         }
         break;
 
@@ -466,31 +466,31 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
         {
         case 0x00: // 设置在线电压
         {
-            LOGI("%s setting on-line voltage to %.1fV\n", error ? "Error" : "Success", val / config->offset_voltage);
+            LOGI("%s setting on-line voltage to %.1fV\n", error ? "Error" : "Success", (val / RATIO_OFFSER) * config->display_offset_voltage);
         }
         break;
 
         case 0x01: // 设置离线电压
         {
-            LOGI("%s setting non-volatile (off-line) voltage to %.1fV\n", error ? "Error" : "Success", val / RATIO_MULTIPLIER);
+            LOGI("%s setting non-volatile (off-line) voltage to %.1fV\n", error ? "Error" : "Success", (val / RATIO_OFFSER) * config->display_offset_voltage);
         }
         break;
 
         case 0x02: // 设置过流保护
         {
-            LOGI("%s setting overvoltage protection to %.1fA\n", error ? "Error" : "Success", val / RATIO_MULTIPLIER);
+            LOGI("%s setting overvoltage protection to %.1fA\n", error ? "Error" : "Success", val / RATIO_OFFSER);
         }
         break;
 
         case 0x03: // 设置在线输出电流
         {
-            LOGI("%s setting on-line current to %.1fA\n", error ? "Error" : "Success", val / config->offset_current);
+            LOGI("%s setting on-line current to %.1fA\n", error ? "Error" : "Success", (val / MAX_CURRENT_OFFSET) * config->display_offset_current);
         }
         break;
 
         case 0x04: // 设置离线输出电流
         {
-            LOGI("%s setting non-volatile (off-line) current to %.1fA\n", error ? "Error" : "Success", val / MAX_CURRENT_MULTIPLIER);
+            LOGI("%s setting non-volatile (off-line) current to %.1fA\n", error ? "Error" : "Success", (val / MAX_CURRENT_OFFSET) * config->display_offset_current);
         }
         break;
 
@@ -637,6 +637,11 @@ const power_protocol_app_t huawei_r48xx_info = {
     .tick = huawei_r48xx_tick,
     .tick_rate = 1000000,
     .can_speed = 125000,
+    .base_voltage_info = {
+        .base_voltage = 55.0,
+        .min_voltage = 41.0,
+        .max_voltage = 58.5,
+    },
 };
 
 const power_protocol_app_t huawei_mppt_info = {
@@ -652,6 +657,11 @@ const power_protocol_app_t huawei_mppt_info = {
     .tick = huawei_r48xx_tick,
     .tick_rate = 1000000,
     .can_speed = 125000,
+    .base_voltage_info = {
+        .base_voltage = 55.0,
+        .min_voltage = 41.0,
+        .max_voltage = 58.5,
+    },
 };
 
 const power_protocol_app_t huawei_c28005g1_info = {
@@ -667,4 +677,9 @@ const power_protocol_app_t huawei_c28005g1_info = {
     .tick = huawei_r48xx_tick,
     .tick_rate = 1000000,
     .can_speed = 125000,
+    .base_voltage_info = {
+        .base_voltage = 55.0,
+        .min_voltage = 41.0,
+        .max_voltage = 58.5,
+    },
 };

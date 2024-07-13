@@ -57,6 +57,13 @@ typedef power_protocol_data_t *(*get_data_t)(void);
 
 typedef struct
 {
+    float base_voltage; // 基准电压 校准时候使用
+    float min_voltage;  // 最小电压
+    float max_voltage;  // 最大电压
+} base_voltage_info_t;
+
+typedef struct
+{
     char name[16];
     can_data_handle_t can_init_handle;                 // 收到第一包数据时调用
     can_data_handle_t can_data_handle;                 // 收到数据时调用
@@ -69,6 +76,7 @@ typedef struct
     tick_t tick;                                       // 定时器回调
     uint64_t tick_rate;                                // 1000000 = 1s 定时器周期
     uint32_t can_speed;                                // CAN波特率
+    base_voltage_info_t base_voltage_info;             // 基准电压信息
 } power_protocol_app_t;
 
 typedef void (*callback_function_t)(void *data, void *user_data);

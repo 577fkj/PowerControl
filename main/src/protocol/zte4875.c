@@ -297,4 +297,9 @@ const power_protocol_app_t zte4875_info = {
     .tick = NULL,
     .tick_rate = MS2US(1000),
     .can_speed = 500000,
+    .base_voltage_info = {
+        .base_voltage = 58.0,
+        .min_voltage = 41.2,
+        .max_voltage = 59.4,
+    },
 };

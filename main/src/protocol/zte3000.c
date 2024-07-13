@@ -165,4 +165,9 @@ const power_protocol_app_t zte3000_info = {
     .tick = zte3000_tick,
     .tick_rate = MS2US(1000),
     .can_speed = 500000,
+    .base_voltage_info = {
+        .base_voltage = 55.0,
+        .min_voltage = 41.0,
+        .max_voltage = 59.0,
+    },
 };

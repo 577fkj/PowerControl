@@ -19,9 +19,10 @@ typedef struct
 
     // output offset
     float set_offset_voltage;
+    float display_offset_voltage;
+
     float set_offset_current;
-    float offset_voltage;
-    float offset_current;
+    float display_offset_current;
 
     // input offset
     float offset_voltage_in;
