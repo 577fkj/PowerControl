@@ -97,7 +97,7 @@ static void module_offset_list_view_on_selected(mui_list_view_event_t event, mui
     case 1:
         if (power_data->output_voltage < 10 || power_data->output_current > 0)
         {
-            mui_msg_box_set_message(p_app_handle->p_msg_box, "电压校正时输出必须大于10V且输出电流为0A");
+            mui_msg_box_set_message(p_app_handle->p_msg_box, "电压校正时输出必须大于10V且输出电流\n为0A");
             mui_msg_box_set_btn_focus(p_app_handle->p_msg_box, 1);
             mui_msg_box_set_btn_text(p_app_handle->p_msg_box, NULL, "确定", NULL);
         }
