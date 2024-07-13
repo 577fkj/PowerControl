@@ -6,7 +6,7 @@
       "type": "cppdbg",
       "request": "launch",
       "MIMode": "gdb",
-      "miDebuggerPath": "${command:espIdf.getXtensaGdb}",
+      "miDebuggerPath": "${command:espIdf.getToolchainGdb}",
       "program": "${workspaceFolder}/build/${command:espIdf.getProjectName}.elf",
       "windows": {
         "program": "${workspaceFolder}\\build\\${command:espIdf.getProjectName}.elf"
