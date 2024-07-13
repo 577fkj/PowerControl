@@ -67,8 +67,7 @@ static void desktop_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canvas)
     mui_canvas_draw_line(p_canvas, 0, 40, 115, 40);
 
     mui_canvas_set_font(p_canvas, u8g2_font_wqy12_t_gb2312a);
-    mui_canvas_draw_utf8_right(p_canvas, 115, 10, "炸飞老铁");
-    mui_canvas_draw_utf8_right(p_canvas, 115, 22, "丢雷楼谋");
+    mui_element_autowrap_text(p_canvas, 67, 10, 48, 24, "炸飞老铁丢雷楼谋");
 
     mui_canvas_draw_line(p_canvas, 65, 25, 115, 25);
 
