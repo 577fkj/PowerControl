@@ -10,6 +10,8 @@
 
 #include "mui_icons.h"
 
+#include "power_protocol.h"
+
 static uint16_t force = 0;
 static uint32_t offset = 0;
 
@@ -49,11 +51,17 @@ void app_list_on_run(mini_app_inst_t *p_app_inst)
     p_app_handle->p_view_dispatcher = mui_view_dispatcher_create();
     p_app_handle->p_list_view = mui_list_view_create();
 
+    power_protocol_app_t *power_protocol = get_current_power_protocol();
+
     for (uint32_t i = 0; i < mini_app_registry_get_app_num(); i++)
     {
         const mini_app_t *p_app = mini_app_registry_find_by_index(i);
         if (!p_app->hide)
         {
+            if (p_app->id == MINI_APP_ID_MODULE_INFO && !power_protocol->draw_module_info)
+            {
+                continue;
+            }
             mui_list_view_add_item(p_app_handle->p_list_view, p_app->icon, p_app->name, (void *)p_app->id);
         }
     }
