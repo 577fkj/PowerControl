@@ -27,7 +27,7 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
     mui_canvas_draw_line(p_canvas, 64, 0, 64, 64);
     mui_canvas_set_font(p_canvas, u8g2_font_wqy12_t_gb2312a);
 
-    char txt[10];
+    char txt[20];
     config_t *config = get_config();
     power_protocol_app_t *power_protocol = get_current_power_protocol();
     power_protocol_data_t *power_data = power_protocol->get_data();
@@ -37,11 +37,13 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
     case 0:
         mui_canvas_draw_utf8(p_canvas, 8, 10, "实际电压");
         sprintf(txt, "%.2fV", p_module_offset_view->offset);
-        mui_canvas_draw_utf8(p_canvas, 17, 25, txt);
+        mui_canvas_draw_utf8(p_canvas, 15, 22, txt);
 
-        mui_canvas_draw_utf8(p_canvas, 14, 40, "偏移量");
-        sprintf(txt, "%.4f", config->set_offset_voltage);
-        mui_canvas_draw_utf8(p_canvas, 15, 55, txt);
+        mui_canvas_draw_utf8(p_canvas, 14, 35, "偏移量");
+        sprintf(txt, "设: %.4f", *p_module_offset_view->set_offset);
+        mui_canvas_draw_utf8(p_canvas, 4, 48, txt);
+        sprintf(txt, "显: %.4f", *p_module_offset_view->disp_offset);
+        mui_canvas_draw_utf8(p_canvas, 4, 60, txt);
 
         mui_canvas_draw_utf8(p_canvas, 68, 10, "设置电压");
         sprintf(txt, "%.2fV", config->set_voltage);
@@ -55,11 +57,13 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
     case 1:
         mui_canvas_draw_utf8(p_canvas, 8, 10, "实际电流");
         sprintf(txt, "%.2fA", p_module_offset_view->offset);
-        mui_canvas_draw_utf8(p_canvas, 17, 25, txt);
+        mui_canvas_draw_utf8(p_canvas, 15, 22, txt);
 
-        mui_canvas_draw_utf8(p_canvas, 14, 40, "偏移量");
-        sprintf(txt, "%.4f", config->set_offset_current);
-        mui_canvas_draw_utf8(p_canvas, 15, 55, txt);
+        mui_canvas_draw_utf8(p_canvas, 14, 35, "偏移量");
+        sprintf(txt, "设: %.4f", *p_module_offset_view->set_offset);
+        mui_canvas_draw_utf8(p_canvas, 4, 48, txt);
+        sprintf(txt, "显: %.4f", *p_module_offset_view->disp_offset);
+        mui_canvas_draw_utf8(p_canvas, 4, 60, txt);
 
         mui_canvas_draw_utf8(p_canvas, 68, 10, "设置电流");
         sprintf(txt, "%.2fA", config->set_current);
@@ -106,28 +110,28 @@ static void module_offset_view_on_input(mui_view_t *p_view, mui_input_event_t *e
         switch (event->key)
         {
         case INPUT_KEY_LEFT:
-            val += 0.1;
+            val += 0.01;
             break;
 
         case INPUT_KEY_CENTER:
             switch (p_module_offset_view->count)
             {
             case 0:
-                config->set_offset_voltage = p_module_offset_view->offset / config->set_voltage;
-                config->display_offset_voltage = p_module_offset_view->offset / power_data->output_voltage;
+                *p_module_offset_view->set_offset = p_module_offset_view->offset / config->set_voltage;
+                *p_module_offset_view->disp_offset = p_module_offset_view->offset / power_data->output_voltage;
                 power_protocol->set_online_voltage_current(config->set_voltage, config->set_current);
                 break;
 
             case 1:
-                config->set_offset_current = p_module_offset_view->offset / config->set_current;
-                config->display_offset_current = p_module_offset_view->offset / power_data->output_current;
+                *p_module_offset_view->set_offset = p_module_offset_view->offset / config->set_current;
+                *p_module_offset_view->disp_offset = p_module_offset_view->offset / power_data->output_current;
                 power_protocol->set_online_voltage_current(config->set_voltage, config->set_current);
                 break;
             }
             break;
 
         case INPUT_KEY_RIGHT:
-            val -= 0.1;
+            val -= 0.01;
             break;
         default:
             break;

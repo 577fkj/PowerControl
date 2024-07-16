@@ -64,10 +64,8 @@ void config_init()
         config->display_offset_voltage = 1.0;
         config->display_offset_current = 1.0;
 
-        config->offset_voltage_in = 1.0;
-        config->offset_current_in = 1.0;
-
-        config->other_offset = 1.0;
+        config->zte4875_display_offset_voltage = 1.0;
+        config->zte4875_set_offset_voltage = 1.0;
 
         strcpy(config->ble_name, "PowerControl");
 

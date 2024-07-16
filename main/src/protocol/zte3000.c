@@ -4,11 +4,6 @@
 
 #include "app_config.h"
 
-#define VOLTAGE_OFFSET 1
-#define CURRENT_OFFSET 1
-#define INPUT_CURRENT_OFFSET 1
-
-static app_data_t app_data = {0};
 static const uint8_t data[8] = {0x78, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 static uint8_t id = 0;
@@ -27,10 +22,11 @@ void zte3000_set_status(bool status)
     can_send(get_send_id(0x12780030), can_data, 8);
 }
 
-static void set_voltage_current(float voltage, float current)
+static void zte3000_set_voltage_current(float voltage, float current)
 {
-    uint16_t v = voltage / VOLTAGE_OFFSET * 1000;
-    uint16_t a = current / CURRENT_OFFSET * 1000;
+    config_t *config = get_config();
+    uint16_t v = (voltage / config->set_offset_voltage) * 10;
+    uint16_t a = (current / config->set_offset_current) * 10;
     uint8_t can_data[8] = {0};
     can_data[0] = 0x78;
     can_data[1] = 0x20;
@@ -56,10 +52,11 @@ static void set_voltage_current(float voltage, float current)
     */
 }
 
-static void set_offline_voltage_current(float voltage, float current)
+static void zte3000_set_offline_voltage_current(float voltage, float current)
 {
-    uint16_t v = voltage / VOLTAGE_OFFSET * 1000;
-    uint16_t a = current / CURRENT_OFFSET * 1000;
+    config_t *config = get_config();
+    uint16_t v = (voltage / config->set_offset_voltage) * 10;
+    uint16_t a = (current / config->set_offset_current) * 10;
     uint8_t can_data[8] = {0};
     can_data[0] = 0x78;
     can_data[1] = 0x22;
@@ -76,17 +73,19 @@ static void set_offline_voltage_current(float voltage, float current)
 
 void zte3000_can_init_handle(uint32_t can_id, uint8_t *can_data)
 {
+    config_t *config = get_config();
     id = (can_id >> 0x10) & 0xFF;
     zte3000_set_status(true);
-    set_voltage_current(app_data.voltage, app_data.current);
+    zte3000_set_voltage_current(config->set_voltage, config->set_current);
 }
 
 void zte3000_can_data_handle(uint32_t can_id, uint8_t *can_data)
 {
-    if (can_id != 0x1a007810 + (id * 0x1000))
+    if (can_id != get_send_id(0x1a007810))
     {
         return;
     }
+    config_t *config = get_config();
     uint8_t mode = can_data[1];
     uint16_t data = unpack_uint16_big_endian(can_data + 2);
     uint16_t data2 = unpack_uint16_big_endian(can_data + 4);
@@ -94,18 +93,18 @@ void zte3000_can_data_handle(uint32_t can_id, uint8_t *can_data)
     switch (mode)
     {
     case 0x00:
-        power_data.input_voltage = data / 10;
+        power_data.input_voltage = data / 10.0;
         break;
 
     case 0x41:
-        power_data.input_current = data / 10 * INPUT_CURRENT_OFFSET;
+        power_data.input_current = (data / 10.0) * config->display_offset_voltage;
         power_data.input_power = power_data.input_voltage * power_data.input_current;
         break;
 
     case 0x42:
-        power_data.output_current = data2 / 10 * CURRENT_OFFSET;
-        power_data.output_temp = data3 / 10;
-        power_data.output_voltage = data * VOLTAGE_OFFSET;
+        power_data.output_voltage = (data / 10.0) * config->display_offset_voltage;
+        power_data.output_current = (data2 / 10.0) * config->display_offset_current;
+        power_data.input_temp = data3 / 10.0;
         power_data.output_power = power_data.output_voltage * power_data.output_current;
         break;
 
@@ -125,9 +124,6 @@ power_protocol_data_t *zte3000_get_data()
 
 void zte3000_init_power_protocol()
 {
-    config_t *config = get_config();
-    app_data.current = config->set_current;
-    app_data.voltage = config->set_voltage;
 }
 
 static int tick_count = 0;
@@ -144,7 +140,7 @@ void zte3000_tick()
     switch (tick_count)
     {
     case 2: // 2000ms
-        set_voltage_current(config->set_voltage, config->set_current);
+        zte3000_set_voltage_current(config->set_voltage, config->set_current);
         tick_count = 0;
         break;
     default:
@@ -153,12 +149,13 @@ void zte3000_tick()
 }
 
 const power_protocol_app_t zte3000_info = {
+    .id = POWER_PROTOCOL_ZTE_3000,
     .name = "ZTE ZXD3000",
     .can_init_handle = zte3000_can_init_handle,
     .can_data_handle = zte3000_can_data_handle,
     .set_status = zte3000_set_status,
-    .set_online_voltage_current = set_voltage_current,
-    .set_offline_voltage_current = set_offline_voltage_current,
+    .set_online_voltage_current = zte3000_set_voltage_current,
+    .set_offline_voltage_current = zte3000_set_offline_voltage_current,
     .draw_module_info = NULL,
     .init = zte3000_init_power_protocol,
     .get_data = zte3000_get_data,

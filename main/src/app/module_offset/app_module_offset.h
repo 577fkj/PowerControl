@@ -28,6 +28,8 @@ typedef struct
     esp_timer_handle_t timer;
     uint8_t count;
     float offset;
+    float *disp_offset;
+    float *set_offset;
     void *user_data;
     void *old_draw_cb;
 } module_offset_view_t;

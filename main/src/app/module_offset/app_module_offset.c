@@ -44,6 +44,9 @@ static void module_offset_msg_box_cb(mui_msg_box_event_t event, mui_msg_box_t *p
     case 1:
         conf->set_offset_voltage = 1.0;
         conf->display_offset_voltage = 1.0;
+        conf->zte4875_display_offset_voltage = 1.0;
+        conf->zte4875_set_offset_voltage = 1.0;
+
         if (power_protocol->base_voltage_info.base_voltage > 0)
         {
             conf->set_voltage = power_protocol->base_voltage_info.base_voltage;
@@ -52,14 +55,28 @@ static void module_offset_msg_box_cb(mui_msg_box_event_t event, mui_msg_box_t *p
 
         p_app_handle->p_module_offset_view->count = 0;
         p_app_handle->p_module_offset_view->offset = power_data->output_voltage;
+        p_app_handle->p_module_offset_view->set_offset = &conf->set_offset_voltage;
+        p_app_handle->p_module_offset_view->disp_offset = &conf->display_offset_voltage;
         break;
 
     case 2:
-        conf->set_offset_current = 0.0;
-        conf->display_offset_current = 0.0;
+        conf->set_offset_current = 1.0;
+        conf->display_offset_current = 1.0;
 
         p_app_handle->p_module_offset_view->count = 1;
         p_app_handle->p_module_offset_view->offset = power_data->output_current;
+        p_app_handle->p_module_offset_view->set_offset = &conf->set_offset_current;
+        p_app_handle->p_module_offset_view->disp_offset = &conf->display_offset_current;
+        break;
+
+    case 3:
+        conf->zte4875_display_offset_voltage = 1.0;
+        conf->zte4875_set_offset_voltage = 1.0;
+
+        p_app_handle->p_module_offset_view->count = 0;
+        p_app_handle->p_module_offset_view->offset = power_data->output_voltage;
+        p_app_handle->p_module_offset_view->set_offset = &conf->zte4875_set_offset_voltage;
+        p_app_handle->p_module_offset_view->disp_offset = &conf->zte4875_display_offset_voltage;
         break;
     }
 
@@ -74,7 +91,7 @@ static void module_offset_list_view_on_selected(mui_list_view_event_t event, mui
 {
     app_module_offset_t *p_app_handle = p_view->user_data;
 
-    if (p_item->user_data == 3)
+    if (p_item->user_data == -1)
     {
         mini_app_launcher_run(mini_app_launcher(), MINI_APP_ID_APP_LIST);
         return;
@@ -94,6 +111,7 @@ static void module_offset_list_view_on_selected(mui_list_view_event_t event, mui
 
     switch ((uint32_t)p_item->user_data)
     {
+    case 3:
     case 1:
         if (power_data->output_voltage < 10 || power_data->output_current > 0)
         {
@@ -149,9 +167,14 @@ void app_module_offset_on_run(mini_app_inst_t *p_app_inst)
     mui_msg_box_set_user_data(p_app_handle->p_msg_box, p_app_handle);
 
     mui_list_view_add_item(p_app_handle->p_list_view, 0xe040, "校准电压", 1);
+    power_protocol_app_t *protocol = get_current_power_protocol();
+    if (protocol->id == POWER_PROTOCOL_ZTE_R4875F1)
+    {
+        mui_list_view_add_item(p_app_handle->p_list_view, 0xe040, "4875校准电压二", 3);
+    }
     mui_list_view_add_item(p_app_handle->p_list_view, 0xe040, "校准电流", 2);
 
-    mui_list_view_add_item(p_app_handle->p_list_view, ICON_HOME, "返回主页", 3);
+    mui_list_view_add_item(p_app_handle->p_list_view, ICON_HOME, "返回主页", -1);
     mui_list_view_set_selected_cb(p_app_handle->p_list_view, module_offset_list_view_on_selected);
 
     // add list view

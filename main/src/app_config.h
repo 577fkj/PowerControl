@@ -24,11 +24,9 @@ typedef struct
     float set_offset_current;
     float display_offset_current;
 
-    // input offset
-    float offset_voltage_in;
-    float offset_current_in;
-
-    float other_offset;
+    // zte4875
+    float zte4875_set_offset_voltage;
+    float zte4875_display_offset_voltage;
 
     uint16_t start_time;
 

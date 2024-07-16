@@ -4,9 +4,6 @@
 
 #include "app_config.h"
 
-#define VOLTAGE_OFFSET 1
-#define CURRENT_OFFSET 1
-
 static const uint8_t data2[8] = {0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 读取输入电压值
 static const uint8_t data3[8] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 读取模块信息
 
@@ -33,8 +30,9 @@ void increase_set_status(bool status)
 
 static void set_voltage_current(float voltage, float current)
 {
-    uint32_t v = voltage / VOLTAGE_OFFSET * 1000;
-    uint32_t a = current / CURRENT_OFFSET * 1000;
+    config_t *config = get_config();
+    uint32_t v = (voltage / config->set_offset_voltage) * 1000;
+    uint32_t a = (current / config->set_offset_current) * 1000;
     uint8_t can_data[8] = {0};
     can_data[0] = 0x00;
 
@@ -60,13 +58,14 @@ void increase_can_data_handle(uint32_t can_id, uint8_t *can_data)
     {
         return;
     }
-    uint16_t cid = unpack_uint16_big_endian(can_data);
-    if (can_id == 0x1207C081 && cid == 0x1)
+    config_t *config = get_config();
+    uint8_t cmd = can_data[0];
+    if (can_id == 0x1207C081 && cmd == 0x1)
     {
-        uint16_t j = unpack_uint16_big_endian(can_data + 2);
+        uint16_t j = unpack_uint16_big_endian(can_data + 1);
         uint16_t k = unpack_uint16_big_endian(can_data + 4);
-        power_data.output_current = j / 10 * CURRENT_OFFSET;
-        power_data.output_voltage = k / 10 * VOLTAGE_OFFSET;
+        power_data.output_current = (j / 10) * config->set_offset_current;
+        power_data.output_voltage = (k / 10) * config->set_offset_voltage;
         power_data.output_power = power_data.output_current * power_data.output_voltage;
 
         uint8_t status1 = can_data[6];
@@ -91,11 +90,11 @@ void increase_can_data_handle(uint32_t can_id, uint8_t *can_data)
     }
     else if (can_id == 0x12008081)
     {
-        power_data.output_temp = unpack_uint32_big_endian(can_data + 8) / 10;
+        power_data.input_temp = unpack_uint32_big_endian(can_data + 8) / 10.0;
     }
     else if (can_id == 0x1207A081)
     {
-        power_data.input_voltage = unpack_uint32_big_endian(can_data + 4) / 32;
+        power_data.input_voltage = unpack_uint32_big_endian(can_data + 4) / 32.0;
     }
 }
 
@@ -127,6 +126,7 @@ void increase_tick()
 }
 
 const power_protocol_app_t increase_info = {
+    .id = POWER_PROTOCOL_INCREASE,
     .name = "Increase",
     .can_init_handle = increase_can_init_handle,
     .can_data_handle = increase_can_data_handle,

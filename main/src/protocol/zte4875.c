@@ -57,6 +57,7 @@ void zte4875_set_status(bool status)
     uint8_t send_data[8];
     for (int i = 3; i != 0; i--)
     {
+        memset(send_data, 0, 8);
         send_data[0] = 0x00;
         memcpy(send_data + 1, data, 7);
         can_send(get_send_id(0x1FA04080), send_data, 18);
@@ -72,14 +73,22 @@ void zte4875_set_status(bool status)
         send_data[5] = crc >> 8;
         send_data[6] = crc;
         can_send(get_send_id(0x1FA04080), send_data, 8);
+
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
 void zte4875_set_voltage_current(float voltage, float current)
 {
-    uint16_t v = voltage * 100;
-    uint16_t a = current * 720;
+    config_t *config = get_config();
+    float voltage_offset = config->set_offset_voltage;
+    if (config->zte4875_set_offset_voltage != 1.0 && config->zte4875_display_offset_voltage != 1.0)
+    {
+        float offset = voltage / voltage_offset;
+        voltage_offset = voltage_offset + (58.0 - offset) * (config->zte4875_display_offset_voltage - offset) * 0.0625;
+    }
+    uint16_t v = (voltage / voltage_offset) * 100;
+    uint16_t a = (current / config->set_offset_current) * 720;
 
     uint8_t data[0x28];
     data[0] = 0xE0;
@@ -246,7 +255,7 @@ void zte4875_can_data_handle(uint32_t can_id, uint8_t *can_data)
     {
         return;
     }
-
+    config_t *config = get_config();
     uint8_t mode = can_data[0];
     uint16_t data = unpack_uint16_big_endian(can_data + 1);
     switch (mode)
@@ -260,7 +269,7 @@ void zte4875_can_data_handle(uint32_t can_id, uint8_t *can_data)
         {
             break;
         }
-        power_data.input_power = data * 1.0; // TODO: offset = voltage_display_offset
+        power_data.input_power = (unpack_uint16_big_endian(can_data + 2) / 100.0) * config->display_offset_voltage; // TODO: offset = voltage_display_offset
         break;
 
     case 0x03:
@@ -269,15 +278,21 @@ void zte4875_can_data_handle(uint32_t can_id, uint8_t *can_data)
             break;
         }
         power_data.input_voltage = data / 1.0;
-        power_data.input_temp = unpack_uint16_big_endian(can_data + 5) * 1.0;
+        power_data.input_temp = unpack_uint16_big_endian(can_data + 5) / 10.0;
         break;
 
     case 0x05:
-        power_data.output_voltage = data * 1.0; // TODO: offset = zte4875_voltage_display_offset + (58.0 - voltage) * (zte4875_voltage_display_offset - voltage_display_offset) * 0.0625
+        float voltage = unpack_uint16_big_endian(can_data + 6) / 100.0;
+        float voltage_offset = config->display_offset_voltage;
+        if (config->zte4875_set_offset_voltage != 1.0 && config->zte4875_display_offset_voltage != 1.0)
+        {
+            voltage_offset = voltage_offset + (58.0 - voltage) * (config->zte4875_display_offset_voltage - voltage_offset) * 0.0625;
+        }
+        power_data.output_voltage = voltage * voltage_offset;
         break;
 
     case 0x86:
-        power_data.output_current = data * 1.0; // TODO: offset = current_display_offset
+        power_data.output_current = (data / 100.0) * config->display_offset_current;
         break;
 
     default:
@@ -286,6 +301,7 @@ void zte4875_can_data_handle(uint32_t can_id, uint8_t *can_data)
 }
 
 const power_protocol_app_t zte4875_info = {
+    .id = POWER_PROTOCOL_ZTE_R4875F1,
     .name = "ZTE R4875F1",
     .can_init_handle = zte4875_can_init_handle,
     .can_data_handle = zte4875_can_data_handle,

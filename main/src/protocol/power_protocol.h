@@ -62,8 +62,21 @@ typedef struct
     float max_voltage;  // 最大电压
 } base_voltage_info_t;
 
+typedef enum
+{
+    POWER_PROTOCOL_HUAWEI_R48XX = 0,
+    POWER_PROTOCOL_HUAWEI_MPPT,
+    POWER_PROTOCOL_HUAWEI_C28005G1,
+    POWER_PROTOCOL_EPS6020,
+    POWER_PROTOCOL_INCREASE,
+    POWER_PROTOCOL_INFY,
+    POWER_PROTOCOL_ZTE_3000,
+    POWER_PROTOCOL_ZTE_R4875F1,
+} power_protocol_id_t;
+
 typedef struct
 {
+    power_protocol_id_t id;
     char name[16];
     can_data_handle_t can_init_handle;                 // 收到第一包数据时调用
     can_data_handle_t can_data_handle;                 // 收到数据时调用

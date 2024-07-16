@@ -4,9 +4,6 @@
 
 #include "app_config.h"
 
-#define VOLTAGE_OFFSET 1
-#define CURRENT_OFFSET 1
-
 static uint16_t id = 0;
 
 static const uint8_t empty_data[8] = {0};
@@ -25,8 +22,9 @@ void infy_set_status(bool status)
 
 static void set_voltage_current(float voltage, float current)
 {
-    uint16_t v = voltage / VOLTAGE_OFFSET * 1000;
-    uint16_t a = current / CURRENT_OFFSET * 1000;
+    config_t *config = get_config();
+    uint16_t v = (voltage / config->set_offset_voltage) * 1000;
+    uint16_t a = (current / config->set_offset_current) * 1000;
     uint8_t can_data[8] = {0};
     can_data[0] = 0x00;
 
@@ -58,26 +56,29 @@ void infy_can_init_handle(uint32_t can_id, uint8_t *can_data)
 
 void infy_can_data_handle(uint32_t can_id, uint8_t *can_data)
 {
-    if (can_id != 0x0286f000 && can_id != 0x0281f03f && can_id != 0x0284F000 && can_id != 0x028AF000)
+    config_t *config = get_config();
+    uint16_t did = id;
+    if (id < 0)
     {
-        return;
+        did = id + 0xFF;
     }
+    can_id -= did >> 0x8;
     if (can_id == 0x0286f000)
     {
         uint16_t iv = unpack_uint16_big_endian(can_data);
         if (iv == 0)
         {
-            iv = unpack_uint16_big_endian(can_data + 8);
+            iv = unpack_uint16_big_endian(can_data + 5);
         }
-        power_data.input_voltage = iv / 10;
+        power_data.input_voltage = iv / 10.0;
         can_send(0x02813FF0, empty_data, 8);
     }
-    else if (can_id == 0x0281f03f)
+    else if (can_id == 0x0289f000)
     {
-        uint32_t v = unpack_uint32_big_endian(can_data);
-        uint32_t a = unpack_uint32_big_endian(can_data + 4);
-        power_data.output_voltage = v * VOLTAGE_OFFSET;
-        power_data.output_current = a * CURRENT_OFFSET;
+        uint32_t v = unpack_uint32_big_endian(can_data + 1);
+        uint16_t a = unpack_uint16_big_endian(can_data + 6);
+        power_data.output_voltage = (v / 1000.0) * config->display_offset_voltage;
+        power_data.output_current = (a / 1000.0) * config->display_offset_current;
         power_data.output_power = power_data.output_voltage * power_data.output_current;
         can_send(0x02883FF0, empty_data, 8);
     }
@@ -111,10 +112,10 @@ void infy_can_data_handle(uint32_t can_id, uint8_t *can_data)
     }
     else if (can_id == 0x028AF000)
     {
-        uint16_t max_voltage = unpack_uint16_big_endian(can_data + 2) * VOLTAGE_OFFSET;
-        uint16_t min_voltage = unpack_uint16_big_endian(can_data + 4) * VOLTAGE_OFFSET;
-        uint16_t min_current = unpack_uint16_big_endian(can_data + 6) * CURRENT_OFFSET;
-        LOGI("max_voltage: %d, min_voltage: %d, min_current: %d\n", max_voltage, min_voltage, min_current);
+        uint16_t max_voltage = unpack_uint16_big_endian(can_data);
+        uint16_t min_voltage = unpack_uint16_big_endian(can_data + 2);
+        uint16_t max_current = unpack_uint16_big_endian(can_data + 4) / 10.0;
+        LOGI("max_voltage: %d, min_voltage: %d, max_current: %d\n", max_voltage, min_voltage, max_current);
     }
 }
 
@@ -149,6 +150,7 @@ void infy_tick()
 }
 
 const power_protocol_app_t infy_info = {
+    .id = POWER_PROTOCOL_INFY,
     .name = "INFY",
     .can_init_handle = infy_can_init_handle,
     .can_data_handle = infy_can_data_handle,

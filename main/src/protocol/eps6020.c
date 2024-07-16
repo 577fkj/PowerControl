@@ -4,9 +4,6 @@
 
 #include "app_config.h"
 
-#define VOLTAGE_OFFSET 1
-#define CURRENT_OFFSET 1
-
 static uint16_t id = 0;
 static const uint8_t empty_data[8] = {0};
 
@@ -24,8 +21,9 @@ static uint32_t get_send_id(uint32_t sid)
 
 static void set_voltage_current(float voltage, float current)
 {
-    uint16_t v = voltage / VOLTAGE_OFFSET * 1000;
-    uint16_t a = current / CURRENT_OFFSET * 1000;
+    config_t *config = get_config();
+    uint16_t v = (voltage / config->set_offset_voltage) * 1000;
+    uint16_t a = (current / config->set_offset_current) * 1000;
     uint8_t can_data[8] = {0};
 
     can_data[0] = 0x00;
@@ -54,6 +52,7 @@ void eps_6020_can_init_handle(uint32_t can_id, uint8_t *can_data)
 
 void eps_6020_can_data_handle(uint32_t can_id, uint8_t *can_data)
 {
+    config_t *config = get_config();
     uint16_t real_id = id;
     if (id < 0)
     {
@@ -66,20 +65,23 @@ void eps_6020_can_data_handle(uint32_t can_id, uint8_t *can_data)
         return;
     }
 
-    uint32_t c = unpack_uint32_big_endian(can_data);
-    uint32_t k = unpack_uint32_big_endian(can_data + 4);
     if (can_id == 0x0286f000)
     {
-        float iv = c / 1000 * VOLTAGE_OFFSET;
-        float ia = k / 1000 * CURRENT_OFFSET;
-        power_data.input_voltage = iv;
-        power_data.input_current = ia;
-        power_data.input_power = iv * ia;
+        uint16_t v = unpack_uint16_big_endian(can_data);
+        if (v == 0)
+        {
+            v = unpack_uint16_big_endian(can_data + 5);
+        }
+        power_data.input_voltage = v / 10.0;
+        // power_data.input_current = ia;
+        // power_data.input_power = iv * ia;
     }
     else if (can_id == 0x0289f000)
     {
-        float ov = c / 1000 * VOLTAGE_OFFSET;
-        float oa = k / 1000 * CURRENT_OFFSET;
+        uint32_t voltage = unpack_uint32_big_endian(can_data + 1);
+        uint16_t current = unpack_uint16_big_endian(can_data + 6);
+        float ov = voltage / 1000 * config->display_offset_voltage;
+        float oa = current / 1000 * config->display_offset_current;
         power_data.output_voltage = ov;
         power_data.output_current = oa;
         power_data.output_power = ov * oa;
@@ -121,6 +123,7 @@ void eps_6020_tick()
 }
 
 const power_protocol_app_t eps_6020_info = {
+    .id = POWER_PROTOCOL_EPS6020,
     .name = "EPS-6020",
     .can_init_handle = eps_6020_can_init_handle,
     .can_data_handle = eps_6020_can_data_handle,

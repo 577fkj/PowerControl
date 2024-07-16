@@ -323,7 +323,7 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
             power_info.max_output_current = val / MAX_CURRENT_OFFSET;
             break;
         case 0x178:
-            power_data.input_voltage = val / config->offset_voltage_in;
+            power_data.input_voltage = val / RATIO_OFFSER;
             break;
         case 0x17F:
             power_data.output_temp = val / RATIO_OFFSER;
@@ -625,6 +625,7 @@ void huawei_r48xx_can_init_handle()
 }
 
 const power_protocol_app_t huawei_r48xx_info = {
+    .id = POWER_PROTOCOL_HUAWEI_R48XX,
     .name = "Huawei r48xx",
     .can_init_handle = huawei_r48xx_can_init_handle,
     .can_data_handle = huawei_r48xx_can_data_handle,
@@ -645,6 +646,7 @@ const power_protocol_app_t huawei_r48xx_info = {
 };
 
 const power_protocol_app_t huawei_mppt_info = {
+    .id = POWER_PROTOCOL_HUAWEI_MPPT,
     .name = "Huawei MPPT",
     .can_init_handle = huawei_r48xx_can_init_handle,
     .can_data_handle = huawei_r48xx_can_data_handle,
@@ -665,6 +667,7 @@ const power_protocol_app_t huawei_mppt_info = {
 };
 
 const power_protocol_app_t huawei_c28005g1_info = {
+    .id = POWER_PROTOCOL_HUAWEI_C28005G1,
     .name = "Huawei C28005G1",
     .can_init_handle = huawei_r48xx_can_init_handle,
     .can_data_handle = huawei_r48xx_can_data_handle,
