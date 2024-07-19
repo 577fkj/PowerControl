@@ -80,6 +80,8 @@ void eps_6020_can_data_handle(uint32_t can_id, uint8_t *can_data)
     {
         uint32_t voltage = unpack_uint32_big_endian(can_data + 1);
         uint16_t current = unpack_uint16_big_endian(can_data + 6);
+        power_data.no_offset_output_voltage = voltage / 1000;
+        power_data.no_offset_output_current = current / 1000;
         float ov = voltage / 1000 * config->display_offset_voltage;
         float oa = current / 1000 * config->display_offset_current;
         power_data.output_voltage = ov;

@@ -3,6 +3,7 @@
 #include "nvs_flash.h"
 
 #include <string.h>
+#include <math.h>
 
 #include "log.h"
 
@@ -27,6 +28,14 @@ void load_config(config_t *config)
 
     // 关闭NVS命名空间
     nvs_close(nvsHandle);
+}
+
+inline void check_float(float *value, float default_value)
+{
+    if (isinf(*value) || isnan(*value))
+    {
+        *value = default_value;
+    }
 }
 
 void config_init()
@@ -71,6 +80,19 @@ void config_init()
 
         save_config(config);
     }
+
+    check_float(&config->max_output_voltage, 100.0);
+    check_float(&config->max_output_current, 50.0);
+    check_float(&config->min_output_voltage, 0.0);
+    check_float(&config->min_output_current, 0.0);
+    check_float(&config->set_voltage, 50.0);
+    check_float(&config->set_current, 10.0);
+    check_float(&config->set_offset_voltage, 1.0);
+    check_float(&config->set_offset_current, 1.0);
+    check_float(&config->display_offset_voltage, 1.0);
+    check_float(&config->display_offset_current, 1.0);
+    check_float(&config->zte4875_display_offset_voltage, 1.0);
+    check_float(&config->zte4875_set_offset_voltage, 1.0);
 }
 
 void save_config(config_t *config)

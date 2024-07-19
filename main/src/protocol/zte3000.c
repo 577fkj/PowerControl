@@ -102,6 +102,8 @@ void zte3000_can_data_handle(uint32_t can_id, uint8_t *can_data)
         break;
 
     case 0x42:
+        power_data.no_offset_output_voltage = data / 10.0;
+        power_data.no_offset_output_current = data2 / 10.0;
         power_data.output_voltage = (data / 10.0) * config->display_offset_voltage;
         power_data.output_current = (data2 / 10.0) * config->display_offset_current;
         power_data.input_temp = data3 / 10.0;

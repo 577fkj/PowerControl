@@ -41,7 +41,9 @@ typedef struct
     float input_temp;
 
     float output_voltage;
+    float no_offset_output_voltage;
     float output_current;
+    float no_offset_output_current;
     float output_power;
     float output_temp;
 

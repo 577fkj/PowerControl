@@ -283,6 +283,7 @@ void zte4875_can_data_handle(uint32_t can_id, uint8_t *can_data)
 
     case 0x05:
         float voltage = unpack_uint16_big_endian(can_data + 6) / 100.0;
+        power_data.no_offset_output_voltage = voltage;
         float voltage_offset = config->display_offset_voltage;
         if (config->zte4875_set_offset_voltage != 1.0 && config->zte4875_display_offset_voltage != 1.0)
         {
@@ -292,6 +293,7 @@ void zte4875_can_data_handle(uint32_t can_id, uint8_t *can_data)
         break;
 
     case 0x86:
+        power_data.no_offset_output_current = data / 100.0;
         power_data.output_current = (data / 100.0) * config->display_offset_current;
         break;
 

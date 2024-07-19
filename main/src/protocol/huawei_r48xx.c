@@ -317,6 +317,7 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
             power_data.efficiency = (val / RATIO_OFFSER) * 100;
             break;
         case 0x175:
+            power_data.no_offset_output_voltage = val / RATIO_OFFSER;
             power_data.output_voltage = (val / RATIO_OFFSER) * config->display_offset_voltage;
             break;
         case 0x176:
@@ -332,10 +333,8 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
             power_data.input_temp = val / RATIO_OFFSER;
             break;
         case 0x181:
-            // hexdump(can_data, 8);
-            power_info.current_limit = val / 100;
-            break; // 限流点? 输出电流?
         case 0x182:
+            power_data.no_offset_output_current = val / RATIO_OFFSER;
             power_data.output_current = (val / RATIO_OFFSER) * config->display_offset_current;
             break;
         case 0x10E:

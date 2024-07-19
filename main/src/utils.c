@@ -1,6 +1,7 @@
 #include "utils.h"
 #include <string.h>
 #include <stdio.h>
+#include "math.h"
 #include "driver/twai.h"
 
 #define USE_GCC_BSWAP_FUNCTIONS 1
@@ -273,4 +274,10 @@ void printf_can_msg(int flag, twai_message_t *msg) // flag：0-send 1-receive
         }
     }
     printf("\n");
+}
+
+float roundf_n(float value, int n)
+{
+    float scale = powf(10, n);
+    return roundf(value * scale) / scale;
 }

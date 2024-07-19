@@ -31,5 +31,6 @@ void hexdump(const void *data, uint16_t size);
 int starts_with(const char *str, const char *prefix);
 void get_substring(const char *str, int start, int end, char *result);
 int ends_with(char *str, char *suffix);
+float roundf_n(float value, int n);
 
 #endif

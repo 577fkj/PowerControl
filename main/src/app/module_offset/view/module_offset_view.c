@@ -46,7 +46,7 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
         mui_canvas_draw_utf8(p_canvas, 4, 60, txt);
 
         mui_canvas_draw_utf8(p_canvas, 68, 10, "设置电压");
-        sprintf(txt, "%.2fV", config->set_voltage);
+        sprintf(txt, "%.2fV", config->set_voltage * (*p_module_offset_view->set_offset));
         mui_canvas_draw_utf8(p_canvas, 75, 25, txt);
 
         mui_canvas_draw_utf8(p_canvas, 68, 40, "输出电压");
@@ -66,7 +66,7 @@ static void module_offset_view_on_draw(mui_view_t *p_view, mui_canvas_t *p_canva
         mui_canvas_draw_utf8(p_canvas, 4, 60, txt);
 
         mui_canvas_draw_utf8(p_canvas, 68, 10, "设置电流");
-        sprintf(txt, "%.2fA", config->set_current);
+        sprintf(txt, "%.2fA", config->set_current * (*p_module_offset_view->set_offset));
         mui_canvas_draw_utf8(p_canvas, 75, 25, txt);
 
         mui_canvas_draw_utf8(p_canvas, 68, 40, "输出电流");
@@ -118,13 +118,13 @@ static void module_offset_view_on_input(mui_view_t *p_view, mui_input_event_t *e
             {
             case 0:
                 *p_module_offset_view->set_offset = p_module_offset_view->offset / config->set_voltage;
-                *p_module_offset_view->disp_offset = p_module_offset_view->offset / power_data->output_voltage;
+                *p_module_offset_view->disp_offset = p_module_offset_view->offset / power_data->no_offset_output_voltage;
                 power_protocol->set_online_voltage_current(config->set_voltage, config->set_current);
                 break;
 
             case 1:
                 *p_module_offset_view->set_offset = p_module_offset_view->offset / config->set_current;
-                *p_module_offset_view->disp_offset = p_module_offset_view->offset / power_data->output_current;
+                *p_module_offset_view->disp_offset = p_module_offset_view->offset / power_data->no_offset_output_current;
                 power_protocol->set_online_voltage_current(config->set_voltage, config->set_current);
                 break;
             }

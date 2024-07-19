@@ -75,10 +75,12 @@ void infy_can_data_handle(uint32_t can_id, uint8_t *can_data)
     }
     else if (can_id == 0x0289f000)
     {
-        uint32_t v = unpack_uint32_big_endian(can_data + 1);
-        uint16_t a = unpack_uint16_big_endian(can_data + 6);
-        power_data.output_voltage = (v / 1000.0) * config->display_offset_voltage;
-        power_data.output_current = (a / 1000.0) * config->display_offset_current;
+        float v = unpack_uint32_big_endian(can_data + 1) / 1000.0;
+        float a = unpack_uint16_big_endian(can_data + 6) / 1000.0;
+        power_data.no_offset_output_voltage = v;
+        power_data.no_offset_output_current = a;
+        power_data.output_voltage = v * config->display_offset_voltage;
+        power_data.output_current = a * config->display_offset_current;
         power_data.output_power = power_data.output_voltage * power_data.output_current;
         can_send(0x02883FF0, empty_data, 8);
     }

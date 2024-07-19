@@ -62,10 +62,12 @@ void increase_can_data_handle(uint32_t can_id, uint8_t *can_data)
     uint8_t cmd = can_data[0];
     if (can_id == 0x1207C081 && cmd == 0x1)
     {
-        uint16_t j = unpack_uint16_big_endian(can_data + 1);
-        uint16_t k = unpack_uint16_big_endian(can_data + 4);
-        power_data.output_current = (j / 10) * config->set_offset_current;
-        power_data.output_voltage = (k / 10) * config->set_offset_voltage;
+        float a = unpack_uint16_big_endian(can_data + 1) / 10;
+        float v = unpack_uint16_big_endian(can_data + 4) / 10;
+        power_data.no_offset_output_voltage = v;
+        power_data.no_offset_output_current = a;
+        power_data.output_current = a * config->set_offset_current;
+        power_data.output_voltage = v * config->set_offset_voltage;
         power_data.output_power = power_data.output_current * power_data.output_voltage;
 
         uint8_t status1 = can_data[6];
