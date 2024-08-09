@@ -1,0 +1,1297 @@
+
+I got some more info from eltek.
+我从 eltek 那里得到了更多信息。
+
+I use a flatpack2 HE but after reading your post I believe the can data are the same.
+我使用 flatpack2 HE，但读完你的帖子后，我相信罐头数据是相同的。
+
+
+What you got is the serial number of your device. Just read it in hexa.
+您得到的是设备的序列号。只需阅读十六进制即可。
+
+You receive 8 bytes. The 6 first are the serial number. The 2 last always 00.
+您收到 8 个字节。前 6 个是序列号。最后 2 总是 00。
+
+
+Note that the can bus is at 125 kb/s and 29 bits.
+请注意，can 总线的速率为125 kb/s ，位数为 29 位。
+
+
+A flatpack have two main states.
+扁平封装有两种主要状态。
+
+
+Stand alone or 单独站立或
+Logged In 已登录
+
+What your read is in stand alone mode.
+您所阅读的内容是在独立模式下。
+
+
+To go further you have to log each device on the can bus.
+要更进一步，您必须记录 CAN 总线上的每个设备。
+
+To do such a thing you nead it serial number and you have to give him a ID = a number between 01 and 96.
+要做到这一点，你需要它的序列号，并且你必须给他一个 ID = 01 到 96 之间的数字。
+
+
+For exemple: 例如：
+in stand alone I get 29 bits 05 02 44 00 and 8 bytes 15 16 17 18 19 20 00 00
+独立时我得到29位05 02 44 00和8字节15 16 17 18 19 20 00 00
+
+
+02 is the ID number (between 01 and 96) 01 is the factory default. 151617181920 the device serial number.
+02 是 ID 号（介于 01 和 96 之间） 01 是出厂默认值。 151617181920 设备序列号。
+
+
+To go in logged mode send for exemple
+例如，要进入记录模式发送
+
+the 29 bits 05 00 48 08 and 8 bytes with the serial number 15 16 17 18 19 20 00 00 (Edit I remove the right 00 in the header.)
+29位05 00 48 08和8个字节，序列号为15 16 17 18 19 20 00 00（编辑我删除了标题中右边的00。）
+
+48 08 is for ID=02 (48 0C ID=3, 48 10 ID=4 ...)
+48 08 用于 ID=02 (48 0C ID=3, 48 10 ID=4 ...)
+
+
+Then you receive a rectifier status message:
+然后您会收到整流器状态消息：
+
+29 bits 05 02 40 04 and 8 bytes 1A 00 00 EB 14 E8 00 1C
+29位05 02 40 04和8字节1A 00 00 EB 14 E8 00 1C
+
+The 04 in the 29 bits say : disabled (I don't connect the output wires). 00 would be Normal
+29 位中的 04 表示：禁用（我不连接输出线）。 00 是正常的
+
+1A = intake temp in °C
+1A = 进气温度（°C）
+
+00 00 Is the output amperage in deci Amp
+00 00 是以十安培为单位的输出安培数
+
+14 EB (invert the 2 bytes) is the output voltage in centi volts
+14 EB（反转 2 个字节）是输出电压，单位为厘伏
+
+00 E8 is the input voltage in volts
+00 E8 是输入电压，单位为伏特
+
+1C is the out air temp in °C.
+1C 是室外空气温度，单位为°C。
+
+
+After connecting à battery with a voltage close to the default output (53.5v) I received:
+连接电压接近默认输出（53.5v）的电池后，我收到：
+
+
+29 bits 05 02 40 00 and 8 bytes 19 31 00 F0 14 E7 00 19
+29位05 02 40 00和8字节19 31 00 F0 14 E7 00 19
+
+that is 那是
+19 = 25°C
+00 31 (you have to invert 31 and 00) is 4.9 A DC, deci amp
+00 31（必须反转 31 和 00）是 4.9 A DC，十安培
+
+14 F0 = 53.60v, centi volts DC
+14 F0 = 53.60v，厘伏直流
+
+00 E7 = 231v volts AC
+00 E7 = 231V 交流电压
+
+
+I will do some more testing.
+我会做更多测试。
+
+#include <mcp_can.h>
+#include <mcp_can_dfs.h>
+#include <SPI.h>
+
+const int SPI_CS_PIN = 10;
+MCP_CAN CAN(SPI_CS_PIN);                                                              // Set CS pin for CANBUS shield
+
+void setup()                                                                          // Initialisation routine
+{
+    Serial.begin(115200);                                                             // Sets the data rate in bits per second (baud) for serial data transmission to PC.
+    delay(1000); 
+START_INIT:
+
+    if(CAN_OK == CAN.begin(CAN_125KBPS))                                              // init can bus : baudrate = 125k !!
+    {
+        Serial.println("CAN BUS Shield init ok!");
+    }
+    else
+    {
+        Serial.println("CAN BUS Shield init fail");
+        Serial.println("Init CAN BUS Shield again");
+        delay(100);
+        goto START_INIT;
+    }
+       unsigned char login[8] = {0x14, 0x14, 0x71, 0x11, 0x08, 0x20, 0x00, 0x00};     //this is the serial number of the unit
+       CAN.sendMsgBuf(0x05004804, 1, 8, login);                                       //send message to log in
+       delay(10);   
+       unsigned char stmp4[8] = {0xFF, 0xFF, 0x80, 0x16, 0x80, 0x16, 0x80, 0x16};     //this is the command for changing the output voltage 16 80 is the maximum voltage of 57.6 V
+       CAN.sendMsgBuf(0x05FF4004, 1, 8, stmp4);                                       //send message to set ouput voltage to all chargers connected to the CAN-bus
+	   delay(10);   
+	   unsigned char setdefaultvolt[5] = {0x29, 0x15, 0x00, 0x80, 0x16};              //this is the command for setting the default output voltage (Last two bytes, LSB first). 16 80 is the maximum voltage of 57.6 V
+	   CAN.sendMsgBuf(0x05019C00, 1, 5, setdefaultvolt);                              //send message to set ouput voltage to all chargers connected to the CAN-bus
+//  00 10 should be 40.96 returned is 43.8 measured is 44.0
+//  00 11 should be 43.52 returned is 43.7 measured is 43.6 
+//  00 12 should be 46.08 returned is 46.2 measured is 46.1
+//  00 13 should be 48.64 returned is 48.8 measured is 48.7
+//  00 14 should be 51.20 returned is 51.3 measured is 51.2 
+//  00 15 should be 53.76 returned is 53.8 measured is 53.8
+//  00 16 should be 56.32 returned is 56.4 measured is 56.4
+//  80 16 should be 57.60 returned is 57.0 measured is 56.9
+//  00 17 should be 58.88 returned is 57.7 measured is 57.6
+//  00 18 should be 61.44 returned is 57.7 measured is 57.6
+      Serial.print("Output Voltage set to : ");
+      Serial.println(stmp4[3]*256*0.01+stmp4[2]*0.01);
+      
+
+}
+
+void loop()                                                                           // main program (LOOP)
+{
+    unsigned char len = 0;
+    unsigned char buf[8] ;
+    if(CAN_MSGAVAIL == CAN.checkReceive())                                            // check if data coming
+    {
+
+        CAN.readMsgBuf(&len, buf);                                                    // read data,  len: data length, buf: data buf
+          INT32U canId = CAN.getCanId();                                              // read the CAN Id
+          Serial.print("0");                                                          // leading zero 
+          Serial.print(canId,HEX);                                                    // output CAN Id to serial monitor
+          Serial.print("\t");                                                         // send Tab
+        for(int i = 0; i<len; i++)                                                    // print the data
+        {
+            if( buf[i] < 0x10){ Serial.print("0");} Serial.print(buf[i],HEX);         // send a leading zero if only one digit
+            Serial.print(" ");                                                        // space to seperate bytes
+        }
+       Serial.println();
+       Serial.print("Temperature = ");
+       Serial.println(buf[0]);                                                        //first byte is temperature in celcius
+       Serial.print("Current = ");
+       Serial.println(buf[2]*256*0.1+buf[1]*0.1);                                     // third (msb) and second byte are current in 0.1A (deciamp) calculated to show directly in Amps
+       Serial.print("OutputVoltage = ");
+       Serial.println(buf[4]*256*0.01+buf[3]*0.01);                                   // fifth (msb) and fourth byte are voltage in 0.01V (centivolt) calculated to show directly in Volts dc
+       Serial.print("OutputPower = ");
+       Serial.println((buf[4]*256*0.01+buf[3]*0.01)*(buf[2]*256*0.1+buf[1]*0.1));     // Power is calculated from output voltage and current. Output is in Watts
+       Serial.print("InputVoltage = ");          
+       Serial.println(buf[5]);                                                        // sixth byte is input voltage in volts ac/dc
+//send request for new update
+       unsigned char stmp3[8] = {0x14, 0x14, 0x71, 0x11, 0x08, 0x20, 0x00, 0x00};     //this is the serial number of the unit
+       CAN.sendMsgBuf(0x05004804, 1, 8, stmp3);                                       //send message to request updated figures and keep being 'logged in' or the charger defaults to 53.5 V
+       
+
+    }
+ 
+
+}
+
+/*********************************************************************************************************
+  END FILE
+  Voltage settings 
+  80 16 => 1680 HEX = 57,60 Volt (= highest possible voltage
+  E6 14 => 14E6 HEX = 53,50 Volt (= factory set voltage)
+  FE 10 => 10FE HEX = 43,50 Volt (= lowest possible voltage)
+*********************************************************************************************************/
+
+
+
+
+
+Some more info about the Flatpack communication protocol. This works for both a Flatpack 2 HE and a Flatpack S
+有关 Flatpack 通信协议的更多信息。这适用于 Flatpack 2 HE 和 Flatpack S
+
+
+0x05014400
+During walk-in (the period where the voltage builds up slowly) the rectifier periodically (every 10 seconds or so) sends out the following message when it's not logged in :
+在步入期间（电压缓慢升高的时期），整流器在未登录时会定期（每 10 秒左右）发出以下消息：
+
+05014400 is the identifier and the serial number is the message followed by 00 00
+05014400 是标识符，序列号是消息后跟 00 00
+
+Walk in can be chosen to be either 5 seconds long or 60 seconds long. For charging my Zero I have opted for the 60 second walkin. It helps current spike when plugging in.
+步入可以选择 5 秒或 60 秒长。为了给我的 Zero 充电，我选择了 60 秒步行充电。它有助于插入时的电流峰值。
+
+
+So in case of of my rectifier (ser nr 141471110820) it is
+因此，对于我的整流器（序列号 141471110820），它是
+
+0x05014400 0x14 0x14 0x71 0x11 0x08 0x20 0x00 0x00 (all HEX numbers)
+0x05014400 0x14 0x14 0x71 0x11 0x08 0x20 0x00 0x00（所有十六进制数字）
+
+
+If you respond ONCE with 0x05004804 0x14 0x14 0x71 0x11 0x08 0x20 0x00 0x00 (serial number + 2 bytes 00) the rectifier sends out exactly 64 messages with the status every 0,2 seconds (or so) before reverting to sending 0x05014400 again every 10 seconds without status messages. If you send the same 0x05004804 again before those 64 messages are up, the rectifier sends out another 64 messages. So in summary, if you send the response command at least every 10 seconds the rectifier stays logged in and keeps sending status messages.
+如果您使用 0x05004804 0x14 0x14 0x71 0x11 0x08 0x20 0x00 0x00（序列号 + 2 个字节 00）响应一次，整流器每 0.2 秒（左右）精确发送 64 条带有状态的消息，然后恢复为每 10 秒再次发送 0x05014400没有状态消息。如果您在这 64 条消息发送之前再次发送相同的 0x05004804，则整流器会再发送 64 条消息。总之，如果您至少每 10 秒发送一次响应命令，整流器将保持登录状态并不断发送状态消息。
+
+
+the status messages are (like described earlier in the thread) :
+状态消息是（如线程前面所述）：
+
+0x05014010 AA BB CC DD EE FF GG HH where
+0x05014010 AA BB CC DD EE FF GG HH 其中
+
+AA is the intake temperature in Celcius
+AA 是进气温度，单位为摄氏度
+
+BB is the output current Low Byte
+BB 为输出电流低字节
+
+CC is the output current High Byte. the current high and low byte combined give the current in deci amps (* 0.1 Amp)
+CC 是输出电流高字节。电流高字节和低字节组合给出电流，以十安培为单位（* 0.1 安培）
+
+DD is the output voltage Low byte
+DD 为输出电压低字节
+
+EE is the output voltage High Byte. the voltage high and low byte combined give the voltage in centivolts (* 0.01 Volt)
+EE 是输出电压高字节。电压高字节和低字节的组合给出了以厘伏为单位的电压（* 0.01 伏）
+
+FF is the input voltage Low Byte
+FF 为输入电压低字节
+
+GG is the input voltage High Byte. the input voltage high and low byte combined gives the AC input voltage in volts
+GG 是输入电压高字节。输入电压高字节和低字节组合得出交流输入电压（以伏特为单位）
+
+HH is the output temperature in Celcius
+HH 是输出温度（摄氏度）
+
+
+after the walk in period is reached the status messages change to :
+到达步入时间后，状态消息将更改为：
+
+0x05014004 AA BB CC DD EE FF GG HH when the rectifier is in normal (Constant voltage) mode
+0x05014004 AA BB CC DD EE FF GG HH 整流器处于正常（恒压）模式时
+
+0x05014008 AA BB CC DD EE FF GG HH when the rectifier is in Constant Current mode (current-limiting)
+0x05014008 AA BB CC DD EE FF GG HH 恒流模式（限流）
+
+0x0501400C AA BB CC DD EE FF GG HH when the input voltage is low (mains plug pulled)
+0x0501400C AA BB CC DD EE FF GG HH 输入电压低时（电源插头拔出）
+
+
+however, during this stage every 10th message is different. The rectifier sends out a message :
+然而，在此阶段，每 10 条消息都会有所不同。整流器发出一条消息：
+
+0x0500NNPP 1B JJ KK LL MM NN PP 00
+NN and PP are the last 2 bytes of the serial number. This has stumped me during diagnostics. I had my code perfect for 1 rectifier and the other was different. Unit i had the messages from 3 rectifiers and i saw the common link :)
+NN 和 PP 是序列号的最后 2 个字节。这在诊断过程中困扰了我。我的代码非常适合 1 个整流器，而另一个则不同。我收到了来自 3 个整流器的消息，我看到了公共链接 :)
+
+The 1B as the first byte of the message is sometimes a 1C (don't know why).
+作为消息第一个字节的 1B 有时是 1C （不知道为什么）。
+
+I believe this is a request from the rectifier to keep being "logged in"
+我相信这是来自整改者的要求，要求保持“登录”状态
+
+
+
+So in short  简而言之
+when the identifier starts with 0x0500 you have to reply with serial number which is containd in the message (do keep in mind that with a 0x05004400 the serial number is the first 6 bytes of the message and with 0x0500NNPP the serial number is the second till the seventh byte (shifted 1 byte)
+当标识符以 0x0500 开头时，您必须回复消息中包含的序列号（请记住，对于 0x05004400，序列号是消息的前 6 个字节，对于 0x0500NNPP，序列号是第二个字节，直到第七个字节（移位 1 个字节）
+
+
+when the identifier starts with 0x0501 it's a status message (and even the identifier shows different statuses)
+当标识符以 0x0501 开头时，它是一个状态消息（甚至标识符显示不同的状态）
+
+
+
+All the above is just to keep being logged in and receive status messages.
+以上只是为了保持登录状态并接收状态消息。
+
+There are (as explained earlier in the thread also ways to control the rectifier)
+有（正如线程前面所解释的，还有控制整流器的方法）
+
+
+If it has send a message 0x05004400 or 0x0500NNPP (NNPP last 2 bytes of serial number) you can respond with a message to alter the voltage and even the maximum current setting.
+如果它发送消息 0x05004400 或 0x0500NNPP（NNPP 序列号的最后 2 个字节），您可以用消息响应来更改电压甚至最大电流设置。
+
+First you have to send a response 0x05004804 with the serial number as message (just to keep it logged in)
+首先，您必须发送一个响应 0x05004804，其中包含序列号作为消息（只是为了保持登录状态）
+
+Second you send the message
+其次你发送消息
+
+0x05FF4004 AA BB CC DD EE FF GG HH where
+0x05FF4004 AA BB CC DD EE FF GG HH 其中
+
+AA is the max current Low Byte
+AA 为最大电流低字节
+
+BB is the max current High Byte
+BB 为最大电流高字节
+
+CC is the voltage measured Low Byte (set it the same as the desired voltage Low byte)
+CC 为测量电压低字节（设置与所需电压低字节相同）
+
+DD is the voltage measured High Byte (set it the same as the desired voltage High byte)
+DD 为测量电压高字节（设置与所需电压高字节相同）
+
+EE is the desired voltage Low byte
+EE 是所需电压低字节
+
+FF is the desired voltage High byte
+FF 为所需电压高字节
+
+GG is the over voltage protection Low byte
+GG为过压保护低字节
+
+HH is the over voltage protection High byte
+HH为过压保护高字节
+
+
+example  例子
+If i send 0x05FF4004 0x64 0x00 0x44 0x16 0x44 0x16 0x3E 0x17
+如果我发送 0x05FF4004 0x64 0x00 0x44 0x16 0x44 0x16 0x3E 0x17
+
+it sets the max current to 10.0 amps (0064 in HEX is 100 is 10.0 Amps)
+它将最大电流设置为 10.0 安培（十六进制的 0064 为 100 为 10.0 安培）
+
+it sets the voltage output to 57.0 Volts (1644 in Hex is 5700 is 57.00 Volts)
+它将电压输出设置为 57.0 伏（十六进制的 1644 为 5700 为 57.00 伏）
+
+it sets the over voltage protection limit to 59.5 Volt (173E in Hex is 5950 is 59.50 Volts)
+它将过压保护限值设置为 59.5 伏（十六进制的 173E 为 5950 为 59.50 伏）
+
+
+I Think the rectifier remembers this setting as long as it's logged in, so in theory you would only have to send this command once (but keep sending the log in command periodically (0x05004804 with the serial number)
+我认为只要登录，整流器就会记住这个设置，所以理论上你只需要发送这个命令一次（但要定期发送登录命令（0x05004804和序列号）
+
+
+The 0x05FF4004 is for a 5 second walk in period (after 5 seconds the output voltage reaches it's goal
+0x05FF4004 用于 5 秒步入周期（5 秒后输出电压达到目标
+
+if you substitute this with 0x05FF4005 (last 4 change to a 5) the walk in period will be 60 seconds. This is stored in non volatile memory and is active from that moment on every time you switch on the rectifier.
+如果将其替换为 0x05FF4005（最后 4 更改为 5），则步入时间将为 60 秒。它存储在非易失性存储器中，并且从每次打开整流器时起就处于活动状态。
+
+
+I send the command for the max current and output voltage every time I see a log in request (identifier starts with 0x0500) As said this probably is not necessary but I do switch the canbus to another rectifier sometimes so I have to send it more often.
+每次看到登录请求时，我都会发送最大电流和输出电压的命令（标识符以 0x0500 开头）如上所述，这可能不是必需的，但有时我确实会将 CANBUS 切换到另一个整流器，因此我必须更频繁地发送它。
+
+
+Also keep in mind that if the rectifier loses contact with the controller (i.e. you don't send any answers) the rectifier will revert to it's original settings (default voltage and maximum current)
+另请记住，如果整流器与控制器失去联系（即您不发送任何答案），整流器将恢复到其原始设置（默认电压和最大电流）
+
+
+For those interested I have changed the code on my arduino as follows. It has automatic serial number detection and status message decoding. I've optimised it as far as possible with my average programming skills but is does the job I want it to do. It has an LCD for showing the message (2x16 characters), it shows any unknown identifier and message (which i have not seen yet), and has a pushbutton to control the maximum current. It sets it initially to 10.0 amps and with every push of the button it adds another 10 Amps. After it has reached 40 Amps and you push the button again it reverts back to 10.0 Amps. The display shows the chosen current output.
+对于那些感兴趣的人，我已经更改了我的 arduino 上的代码，如下所示。它具有自动序列号检测和状态消息解码功能。我已经用我的平均编程技能尽可能地优化了它，但这完成了我想要它做的工作。它有一个 LCD 用于显示消息（2x16 个字符），它显示任何未知的标识符和消息（我还没有看到），并且有一个按钮来控制最大电流。它最初将其设置为 10.0 安培，每按一次按钮，它就会另外增加 10 安培。达到 40 安培后，再次按下按钮，它会恢复到 10.0 安培。显示屏显示所选的电流输出。
+
+
+Happy Tinkering All :)
+快乐修补一切 :)
+
+
+
+// from rectifier : (requests for logins)
+// 05014400 + ser nr + 00 00 from rectifier  : HELLOOW where are you ! rectifier sends 05014400 and 6 bytes serial number and followed by 00 00 (login request)
+// 0500xxyy + 1B + ser nr + 00 is send during normal voltage every second. xxyy is the last 2 bytes from the serial number
+// after either of these send 05004804 every 5 seconds ! to keep logged in. rectifier does not send login requests so after 10 second the numbers stop until 05014400 is sent
+// from rectifier : (status messages)
+// 0501400C + status data : walkin and below 43 volts (error) and during walk-out (input voltage low)
+// 05014010 + status data : walkin busy 
+// 05014004 + status data : normal voltage reached
+// 05014008 + status data : current-limiting active
+
+// send TO rectifier (act as controller)
+// 05004804 + ser nr + 00 00 from controller : send 05004804 and 6 bytes ser number followed by 00 00 
+// 05FF4004 controller sends current and voltage limits (last 4 is 5 sec walk-in, for 60 second walk-in use 05FF4005)
+// 05FF4005 controller sends current and voltage limits (last 5 is 60 sec walk-in, for 5 second walk-in use 05FF4004)
+
+#include <mcp_can.h>
+#include <mcp_can_dfs.h>
+#include <SPI.h>
+#include <LiquidCrystal.h>
+
+const int SPI_CS_PIN = 10;
+word maxcurrent = 0x64;                                                              // set initial maxcurrent to 10A output
+unsigned char len = 0;
+unsigned char serialnr[8];
+int msgreceived;
+MCP_CAN CAN(SPI_CS_PIN);                                                             // Set CS pin for CANBUS shield
+LiquidCrystal lcd(1, 3, 4, 5, 6, 7, 8);                                              // LiquidCrystal(rs, rw, enable, d4, d5, d6, d7)  or LiquidCrystal(rs, enable, d4, d5, d6, d7) 
+
+void setup()                                                                         // Initialisation routine
+{
+ pinMode(A0, INPUT);                                                                 // Set pin A0 to input (pushbutton)
+ digitalWrite(A0, HIGH);                                                             // activate pull-up on A0
+ pinMode(9, OUTPUT);                                                                 // Set pin 9 to output (backlight of the LCD)
+ digitalWrite(9, HIGH);                                                              // Backlight enable
+  lcd.begin(16, 2);                                                                  // splash screen on LCD
+  lcd.print("Flatpack Charger");
+  lcd.setCursor(0, 1);
+  lcd.print("Made by RHO");
+    
+START_INIT:
+
+    if(CAN_OK == CAN.begin(CAN_125KBPS))                                              // init can bus : baudrate = 125k !!
+    {
+        lcd.setCursor(0,0);
+        lcd.print("CAN BUS init OK!");
+        delay(100);
+    }
+    else
+    {
+        lcd.setCursor(0,0);
+        lcd.print("CAN BUS init Fail");
+        lcd.setCursor(0,1);
+        lcd.print("Init CAN BUS again");
+        delay(100);
+        goto START_INIT;
+    }
+    lcd.clear();
+}
+
+void loop()                                                                           // main program (LOOP)
+  {
+    
+  unsigned char buf[8] ;
+  if(CAN_MSGAVAIL == CAN.checkReceive())                                              // check if data coming
+    {
+        CAN.readMsgBuf(&len, buf);                                                    // read data,  len: data length, buf: data buf
+        INT32U canId = CAN.getCanId();                                                // read the CAN Id
+
+
+    if(canId==0x05014400)                                                             //this is the request from the Flatpack rectifier during walk-in (start-up) or normal operation when no log-in response has been received for a while
+       {
+         for(int i = 0; i<8; i++)                                                 
+         {
+         serialnr[i]=buf[i];                                                          // transfer the message buffer to the serial number variable
+         } 
+         CAN.sendMsgBuf(0x05004804, 1, 8, serialnr);                                  //send message to log in (DO NOT ASSIGN AN ID use 00)
+         msgreceived++;                                                               // increase the variable "msgreceived" 
+         unsigned char stmp7[8] = {lowByte(maxcurrent), highByte(maxcurrent), 0x44, 0x16, 0x44, 0x16, 0x3E, 0x17};    // set rectifier to maxcurrent 57,0V (16 44) and OVP to 59.5V (17 3E) qnd long walk-in 4005 or short walk in 4004
+         CAN.sendMsgBuf(0x05FF4005, 1, 8, stmp7);                                                                     //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+       }
+
+    
+    else if(canId==(0x05000000+256*buf[5]+buf[6]))                                    //if CANID = 0500xxyy where xxyy the last 2 digits of the serial nr
+      {
+        for(int i = 0; i<6; i++)                                                 
+          {
+            serialnr[i]=buf[i+1];                                                     // transfer the buffer to the serial number variable (neccesary when switching the CAN-bus to another rectifier while on)
+          } 
+        unsigned char serialnr[8] = {buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], 0x00, 0x00};                     //this is the serial number of the unit which is covered in the request (unit announces its serial number)
+        CAN.sendMsgBuf(0x05004804, 1, 8, serialnr);                                                                   //send message to log in (DO NOT ASSIGN AN ID) use 00
+        msgreceived++;
+        unsigned char stmp7[8] = {lowByte(maxcurrent), highByte(maxcurrent), 0x44, 0x16, 0x44, 0x16, 0x3E, 0x17};     // set rectifier to maxcurrent 57,0V (16 44) and OVP to 59.5V (17 3E) qnd long walk-in 4005 or short walk in 4004
+        CAN.sendMsgBuf(0x05FF4005, 1, 8, stmp7);                                                                      //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+      }
+
+
+    else if((canId==0x05014004)or(canId==0x05014008)or(canId==0x05014010)or(canId=0x0501400C))                        // these are the status messages (05014004 is not current-limiting, 05014008 is current limiting 05014010 = busy with walkin, 0501400C in input voltage low)
+      {  
+           msgreceived++;                                                                                             // record number of messages received
+           if(msgreceived>40)                                                                                     
+            {
+             msgreceived=0;
+             CAN.sendMsgBuf(0x05004804, 1, 8, serialnr);                                                              //send message to log in every 40 messages (DO NOT USE ID NR, USE 00) this because during walk-in the 0500xxyy is not send and the rectifier "logs out" because of no received log-in messages from controller
+             msgreceived++;
+            }
+           
+           lcd.setCursor(0, 0);                                                        //show data on the LCD screen 0x050140yy 0xAA 0xBB 0xCC 0xDD 0xEE 0xFF 0xGG 0xHH
+           lcd.print("T=");
+           lcd.print(buf[0]);                                                          // 0xAA = Temperature in
+           lcd.print("/");  
+           lcd.print(buf[7]);                                                          // 0xHH = Temperature out
+           lcd.print("   ");
+           lcd.setCursor(8,0);
+           lcd.print("I=");
+           lcd.print(buf[2]*256*0.1+buf[1]*0.1);                                       // 0xBB = Current Low Byte, 0xCC = Current High byte. Current in deciAmps (*0.1 Amps)
+           lcd.print("  ");
+              
+           lcd.setCursor(8,1);
+           lcd.print("Vo=");
+           lcd.print(buf[4]*256*0.01+buf[3]*0.01);                                     // 0xDD = Voltage out Low Byte, oxEE = Voltage out High Byte. Voltgae in centivolts (*0.01 Volt)
+           lcd.print("  ");
+                      
+           lcd.setCursor(0,1);
+           lcd.print("Vi=");          
+           lcd.print(256*buf[6]+buf[5]);                                               // 0xFF = Voltage in Low byte, 0xGG = Voltage in High byte. Voltage in Volts (because voltage is below 255 Volts, high byte is always 0)
+           lcd.print("  ");
+           
+           if((digitalRead(A0)==0))                                                    //read digital pin Analog0 and if it is high (pushbutton is pressed) 
+             {
+             maxcurrent = maxcurrent + 100;                                            // raise maxcurrent with 10 A
+             if(maxcurrent > 400)                                                      // to be able to lower the current with one button, if the maxcurrent > 40 the current is reset to 10
+               {
+               maxcurrent =100;
+               }
+             digitalWrite(9,HIGH);                                                                                        // switch on the backlight
+             CAN.sendMsgBuf(0x05004804, 1, 8, serialnr);                                                                  // send message to log in (DO NOT ASSIGN AN ID) use 00
+             unsigned char stmp7[8] = {lowByte(maxcurrent), highByte(maxcurrent), 0x44, 0x16, 0x44, 0x16, 0x3E, 0x17};    // set rectifier to maxcurrent 57,0V (16 44) and OVP to 59.5V (17 3E) qnd long walk-in 4005 or short walk in 4004
+             CAN.sendMsgBuf(0x05FF4005, 1, 8, stmp7);                                                                     // (last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+             lcd.setCursor(0, 0);                                                                                         // announce chosen current on LCD
+             lcd.print("Current set to  ");
+             lcd.setCursor(0, 1);
+             lcd.print(maxcurrent*0.1);
+             lcd.print(" Amp        ");
+             delay(1000);
+             }       
+      } 
+    else
+      {
+        lcd.setCursor(0,0);                                                            // if the canId is unknown
+        lcd.print(canId,HEX);                                                          // show the can Id and the message on the LCD
+        lcd.setCursor(0,1);
+        for(int i = 0; i<len; i++)                                                    
+          {
+          if( buf[i] < 0x10){ lcd.print("0");} lcd.print(buf[i],HEX);                  // send a leading zero if only one digit
+          }
+        delay(1000);                                                                   // show the message for 1 second and then continue
+      }
+    }
+    
+  }
+
+/*********************************************************************************************************
+  END FILE
+*********************************************************************************************************/
+
+
+
+
+
+
+
+The procedure for permanent default voltage change is :
+永久默认电压更改的程序是：
+
+You have to have a connection to the CAN-bus (obviously)
+您必须连接到 CAN 总线（显然）
+
+if the serial number of your unit is 123456789012
+如果您的设备序列号是 123456789012
+
+
+send 0x05004804 0x12 0x34 0x56 0x78 0x90 0x12 0x00 0x00 (to log in to the rectifier)
+发送 0x05004804 0x12 0x34 0x56 0x78 0x90 0x12 0x00 0x00（登录整流器）
+
+send 0x05009C00 0x29 0x15 0x00 0x80 0x16 (to set the permanent default voltage) EDITED !!!!!
+发送 0x05009C00 0x29 0x15 0x00 0x80 0x16 （设置永久默认电压）编辑!!!!!
+
+
+After about 10 seconds or so the output voltage should change to the new default voltage.
+大约 10 秒后，输出电压应更改为新的默认电压。
+
+Now wait 30 seconds and disconnect the power to the rectifier.
+现在等待 30 秒并断开整流器的电源。
+
+When you start up again the voltage will default to (in the example) 57.5 Volt. The default voltage is determined by the last 2 bytes of the second command. Multiply your desired voltage with 100 (57.50 => 5750). Convert this number to HEX values (5700 => 0x1680). switch the two bytes (0x1680 => 0x80 0x16) and you have your code for setting the voltage
+当您再次启动时，电压将默认为（在示例中）57.5 伏。默认电压由第二个命令的最后 2 个字节确定。将所需电压乘以 100 (57.50 => 5750)。将此数字转换为十六进制值 (5700 => 0x1680)。切换两个字节（0x1680 => 0x80 0x16），你就得到了设置电压的代码
+
+
+For permanent current setting I have no procedure.
+对于永久电流设置我没有任何程序。
+
+It could very well be a command similar as to change the permanent voltage but I have no knowledge about that. I also have no "spare" Flatpack to experiment with.
+它很可能是类似于改变永久电压的命令，但我对此一无所知。我也没有“备用”Flatpack 可供实验。
+
+
+In my post above (with the latest arduino code) I respond to the rectifier's questions which is the elegant way of communicating
+在我上面的帖子中（使用最新的arduino代码）我回答了整流器的问题，这是一种优雅的沟通方式
+
+I [strike]THINK[/strike] confirmed that it is also possible to just send the current and voltage command every few seconds and that the rectifier understands it and acts accordingly, but you have to keep sending those 2 messages otherwise the rectifier defaults to his default output voltage and maximum current.
+我[strike]THINK[/strike]确认也可以每隔几秒发送一次电流和电压命令，并且整流器理解它并相应地采取行动，但你必须继续发送这两条消息，否则整流器默认为他的默认输出电压和最大电流。
+
+
+To set the current control (and also voltage) message
+设置电流控制（以及电压）消息
+
+Send the following 2 messages at least every 10 seconds (5 or less seconds may be better)
+至少每 10 秒发送以下 2 条消息（5 秒或更少可能更好）
+
+if the serial number of your unit is 123456789012
+如果您的设备序列号是 123456789012
+
+
+send 0x05004804 0x12 0x34 0x56 0x78 0x90 0x12 0x00 0x00 (to log in to the rectifier)
+发送 0x05004804 0x12 0x34 0x56 0x78 0x90 0x12 0x00 0x00（登录整流器）
+
+send 0x05FF4004 0x64 0x00 0x80 0x16 0x80 0x16 0x3E 0x17 (to set the current, the voltage and the over voltage protection)
+发送 0x05FF4004 0x64 0x00 0x80 0x16 0x80 0x16 0x3E 0x17 （设置电流、电压和过压保护）
+
+
+Current is the first two bytes of the second message (0x64 0x00). Switch the 2 bytes (=> 0x00 0x64 = 0x0064). convert to decimal (0x0064 => 100). divide by 10 (not 100) and you get 10.0 Amps.
+当前是第二条消息的前两个字节 (0x64 0x00)。切换 2 个字节 (=> 0x00 0x64 = 0x0064)。转换为十进制（0x0064 => 100）。除以 10（不是 100），得到 10.0 安培。
+
+If you would want 28.6 Amps you invert the procedure : multiply by 10 (= 286), convert to HEX (0x011E), switch first and second byte (0x1E 0x01) and you have your desired current.
+如果您想要 28.6 安培，则反转该过程：乘以 10 (= 286)，转换为十六进制 (0x011E)，切换第一个和第二个字节 (0x1E 0x01)，然后您就得到了所需的电流。
+
+The voltage is the 3rd and 4th byte of the second message (same procedure but division/multiplication by 100). 0x80 0x16 would give 57.50 Volts
+电压是第二条消息的第 3 个和第 4 个字节（过程相同，但除/乘以 100）。 0x80 0x16 给出 57.50 伏
+
+The 5th and 6th byte should be the same as the 3rd and 4th byte respectively (so also 0x80 0x16)
+第 5 个和第 6 个字节应分别与第 3 个和第 4 个字节相同（因此也是 0x80 0x16）
+
+The 7th and 8th byte are the over voltage protection limit. With 17 and 3E in the example it is set at 59.50 Volts (same calculation as output voltage)
+第7、8字节为过压保护限值。示例中的 17 和 3E 设置为 59.50 伏（与输出电压相同的计算）
+
+
+For the circuit I used a buildcircuit LCD DIY Kit together with a 5V CAN-bus board and a 75V to 5V DCDC converter to power the circuit.
+对于该电路，我使用了构建电路 LCD DIY 套件以及 5V CAN 总线板和 75V 至 5V DCDC 转换器来为电路供电。
+
+http://www.mikroe.com/click/can-spi-5v/
+http://www.buildcircuit.com/serial-lcd-do-it-yourselfdiy-kit/
+
+Easiest would be to use an arduino UNO with a CANbus shield, but that ends up a little bulky. You would have a super compact high power rectifier and a CANbus controller half the size of 1 flatpack S :D
+最简单的方法是使用带有 CANbus 扩展板的 arduino UNO，但最终会显得有点笨重。您将拥有一个超紧凑型高功率整流器和一个 CANbus 控制器，其尺寸只有 1 台扁平封装 S 的一半 :D
+
+I'm now looking into finding a very small microcontroller board with CAN-bus interface and see if I can fit it inside the Flatpack S. That would be the ultimate solution. Either that or find the command for permanent current limit change :wink:
+我现在正在寻找一个带有 CAN 总线接口的非常小的微控制器板，看看是否可以将它安装到 Flatpack S 中。这将是最终的解决方案。或者找到永久电流限制更改的命令:wink:
+
+
+maybe this one is worth looking into. it looks quite small
+也许这个值得研究一下。它看起来很小
+
+http://www.hobbytronics.co.uk/leonardo-canbus
+
+!!!! a word of caution when you use multiple flatpacks in series!!!. The Can-bus is referenced to the negative DC output. So you cannot connect to both can-busses of two flatpacks in series or you will destroy the canbus controller on the flatpack. But for current control that is not necessary. Only connect 1 flatpack to the can-bus and that rectifier will determine the current. the other will follow) obviously
+！！！当您串联使用多个扁平封装时请注意！ Can-bus 以负直流输出为参考。因此，您不能连接到串联的两个 Flatpack 的 CAN 总线，否则您将损坏 Flatpack 上的 Canbus 控制器。但对于电流控制来说，这是不必要的。仅将 1 个扁平电池连接到 CAN 总线，该整流器将确定电流。另一个将跟随）显然
+
+
+
+
+
+// from rectifier : (requests for logins)
+// 05014400 + ser nr + 00 00 from rectifier  : HELLOOW where are you ! rectifier sends 05014400 and 6 bytes serial number and followed by 00 00 (login request)
+// 0500xxyy + 1B + ser nr + 00 is send during normal voltage every second. xxyy is the last 2 bytes from the serial number
+// after either of these send 05004804 every 5 seconds ! to keep logged in. rectifier does not send login requests so after 10 second the numbers stop until 05014400 is sent
+// from rectifier : (status messages)
+// 0501400C + status data : walkin and below 43 volts (error) and during walk-out (input voltage low)
+// 05014010 + status data : walkin busy 
+// 05014004 + status data : normal voltage reached
+// 05014008 + status data : current-limiting active
+
+// send TO rectifier (act as controller)
+// 05004804 + ser nr + 00 00 from controller : send 05004804 and 6 bytes ser number followed by 00 00 
+// 05FF4004 controller sends current and voltage limits (last 4 is 5 sec walk-in, for 60 second walk-in use 05FF4005)
+// 05FF4005 controller sends current and voltage limits (last 5 is 60 sec walk-in, for 5 second walk-in use 05FF4004)
+
+#include <mcp_can.h>
+#include <mcp_can_dfs.h>
+#include <SPI.h>
+#include <LiquidCrystal.h>
+
+word maxcurrent = 100;                                                             // set initial maxcurrent (divide by 10)
+word outputvoltage = 5750;                                                         // set output voltage to 57.50 Volt (divide by 100)
+word overvoltage = 5950;                                                           // set the overvoltage protection limit at 59.50 Volt (divide by 100)
+bool longwalkin = HIGH;                                                            // HIGH is for 60 second walk-in, LOW is for 5 second walkin (watch the capitols !)
+word currentstep = 100;
+
+/* THIS IS THE MAIN PROGRAM FOR THE LEONARDO CANBUS BOARD
+ *  DO NOT ALTER ANY CODE BELOW UNLESS YOU'RE A PROGRAMMER
+ */
+
+const int SPI_CS_PIN = 17;                                                          // set the input pin for the CANBUS receiver (on the leonardoboard = 17)
+unsigned char len = 0;                                                              // this variable holds the length of the CANBUS message received
+unsigned char serialnr[8];                                                          // this variable holds the serialnumber of the Flatpack
+int msgreceived;                                                                    // this variable holds the number of messages received
+int led = 23;                                                                       // LED output pin for the leonardo CAN board= 23
+int buttondown = 10;
+int buttonup = 11;
+
+MCP_CAN CAN(SPI_CS_PIN);                                                            // Set CS pin for CANBUS shield
+//LiquidCrystal lcd(1, 3, 4, 5, 6, 7, 8);                                              // LiquidCrystal(rs, rw, enable, d4, d5, d6, d7)  or LiquidCrystal(rs, enable, d4, d5, d6, d7) 
+
+void setup()                                                                         // Initialisation routine
+{
+ pinMode(buttondown, INPUT);                                                                 // Set pin 10 to input (pushbutton for down)
+ digitalWrite(buttondown, HIGH);                                                             // activate pull-up on A0
+ pinMode(buttonup, INPUT);                                                                 // Set pin 11 to input (pushbutton for up)
+ digitalWrite(buttonup, HIGH);                                                             // activate pull-up on A0
+ pinMode(led, OUTPUT);                                                               // pin 23 is the output pin for the LEONARDO CANBUS board
+ digitalWrite(led, LOW);                                                             // turn the LED of
+/*  lcd.begin(16, 2);                                                                // splash screen on LCD
+  lcd.print("Flatpack Charger");
+  lcd.setCursor(0, 1);
+  lcd.print("Made by RHO");
+*/  
+ Serial.begin(115200);                                                               // Set the baudrate for the seial connection to the PC at 115200
+ 
+ START_INIT:
+
+    if(CAN_OK == CAN.begin(CAN_125KBPS))                                              // init can bus : baudrate = 125k !!
+    {
+//        lcd.setCursor(0,0);
+//        lcd.print("CAN BUS init OK!");
+
+        Serial.println("CAN BUS Shield init ok!");
+    }
+    else
+    {
+//        lcd.setCursor(0,0);
+//        lcd.print("CAN BUS init Fail");
+//        lcd.setCursor(0,1);
+//        lcd.print("Init CAN BUS again");
+        Serial.println("CAN BUS Shield init fail");
+        Serial.println("Init CAN BUS Shield again");
+        goto START_INIT;
+    }
+//    lcd.clear();
+}
+
+void loop()                                                                           // main program (LOOP)
+  {
+    
+  unsigned char buf[8] ;
+  if(CAN_MSGAVAIL == CAN.checkReceive())                                              // check if data coming
+    {
+        digitalWrite(led,HIGH);                                                       // turn the LED on
+        CAN.readMsgBuf(&len, buf);                                                    // read data,  len: data length, buf: data buf
+        INT32U canId = CAN.getCanId();                                                // read the CAN Id
+         Serial.println();                                                            // start on a new line
+         Serial.print("Received : 0");                                                // leading zero 
+         Serial.print(canId,HEX);                                                     // output CAN Id to serial monitor
+         Serial.print("\t");                                                          // send Tab
+        for(int i = 0; i<len; i++)                                                    // print the data
+        {
+            if( buf[i] < 0x10){ Serial.print("0");} Serial.print(buf[i],HEX);         // send a leading zero if only one digit
+            Serial.print(" ");                                                        // space to seperate bytes
+        }
+        digitalWrite(led,LOW);                                                        // turn the LED off
+
+
+    if(canId==0x05014400)                                                             //this is the request from the Flatpack rectifier during walk-in (start-up) or normal operation when no log-in response has been received for a while
+       {
+         for(int i = 0; i<8; i++)                                                 
+         {
+           serialnr[i]=buf[i];                                                          // transfer the message buffer to the serial number variable
+         } 
+          Serial.print("\tSerial Number is : ");
+          for(int i = 0; i<6; i++)                                                 // print the data
+          {
+            if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+          }
+         digitalWrite(led,HIGH);
+         CAN.sendMsgBuf(0x05004804, 1, 8, serialnr);                                  //send message to log in (DO NOT ASSIGN AN ID use 00)
+         digitalWrite(led,LOW);
+         Serial.println();
+         Serial.print("TRANSMIT : 05004804");
+         Serial.print("\t");
+         for(int i = 0; i<len; i++)                                                 // print the data
+           {
+             if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+             Serial.print(" ");                                                     // space to seperate bytes
+           }
+       Serial.print("\tLog in with SrNr : ");
+        for(int i = 0; i<6; i++)                                                 // print the data
+          {
+            if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+          }
+         
+         
+         msgreceived++;                                                               // increase the variable "msgreceived" 
+         unsigned char stmp7[8] = {lowByte(maxcurrent), highByte(maxcurrent), lowByte(outputvoltage), highByte(outputvoltage), lowByte(outputvoltage), highByte(outputvoltage), lowByte(overvoltage), highByte(overvoltage)};    // set rectifier to maxcurrent 57,0V (16 44) and OVP to 59.5V (17 3E) qnd long walk-in 4005 or short walk in 4004
+          if(longwalkin == HIGH)
+           {        
+             digitalWrite(led,HIGH);
+             CAN.sendMsgBuf(0x05FF4005, 1, 8, stmp7);                                                                     //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+             digitalWrite(led,LOW);
+             Serial.println();
+             Serial.print("TRANSMIT : 05FF4005");
+            }
+          else
+            {
+             digitalWrite(led,HIGH);
+              CAN.sendMsgBuf(0x05FF4004, 1, 8, stmp7);                                                                     //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+             digitalWrite(led,LOW);
+              Serial.println();
+              Serial.print("TRANSMIT : 05FF4004");
+            }
+        Serial.print("\t");
+        for(int i = 0; i<len; i++)                                                 // print the data
+          {
+            if( stmp7[i] < 0x10){ Serial.print("0");} Serial.print(stmp7[i],HEX);      // send a leading zero if only one digit
+            Serial.print(" ");                                                     // space to seperate bytes
+          }
+//        Serial.println();
+//        Serial.print("\t");
+//        for(int i = 0; i<len; i++)                                                 // print the data
+//          {
+//            if( stmp7[i] < 0x10){ Serial.print("0");} Serial.print(stmp7[i],HEX);      // send a leading zero if only one digit
+//            Serial.print(" ");                                                     // space to seperate bytes
+ //         }
+        Serial.print("\tImax set to : ");
+        Serial.print(0.1*(stmp7[0]+stmp7[1]*256));
+        Serial.print(" A\t");
+        Serial.print("Vout set to : ");
+        Serial.print(0.01*(stmp7[2]+stmp7[3]*256));
+        Serial.print(" V\t");
+        Serial.print("OVP set to : ");
+        Serial.print(0.01*(stmp7[6]+stmp7[7]*256));
+        Serial.print(" V\tWalkin : ");
+        if(longwalkin == HIGH)
+          {        
+             Serial.print("60 seconds");
+          }
+       else
+          {
+             Serial.print("5 seconds");
+          }          
+       }
+
+    
+    else if(canId==(0x05000000+256*buf[5]+buf[6]))                                    //if CANID = 0500xxyy where xxyy the last 2 digits of the serial nr
+      {
+        for(int i = 0;i<6; i++)
+        {
+        serialnr[i] = buf[i+1];  
+        }
+//       unsigned char serialnr[8] = {buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], 0x00, 0x00};                     //this is the serial number of the unit which is covered in the request (unit announces its serial number)
+        Serial.print("\tSerial Number is : ");
+        for(int i = 0; i<6; i++)                                                 // print the data
+          {
+            if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+          }
+        msgreceived++;
+              digitalWrite(led,HIGH);
+       CAN.sendMsgBuf(0x05004804, 1, 8, serialnr);                                                                      //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+             digitalWrite(led,LOW);
+        msgreceived=0;
+        Serial.println();
+        Serial.print("TRANSMIT : 05004804");
+        Serial.print("\t");
+       for(int i = 0; i<8; i++)                                                 // print the data
+          {
+            if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+            Serial.print(" ");                                                     // space to seperate bytes
+          }
+        Serial.print("\tLog in with SrNr : ");
+        for(int i = 0; i<6; i++)                                                 // print the data
+          {
+            if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+          }
+             
+        unsigned char stmp7[8] = {lowByte(maxcurrent), highByte(maxcurrent), lowByte(outputvoltage), highByte(outputvoltage), lowByte(outputvoltage), highByte(outputvoltage), lowByte(overvoltage), highByte(overvoltage)};     // set rectifiers maxcurrent, outputvoltage and OVP and long walk-in 4005 or short walk in 4004
+         if(longwalkin == HIGH)
+           {        
+             digitalWrite(led,HIGH);
+             CAN.sendMsgBuf(0x05FF4005, 1, 8, stmp7);                                                                     //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+             digitalWrite(led,LOW);
+             Serial.println();
+             Serial.print("TRANSMIT : 05FF4005");
+            }
+          else
+            {
+              digitalWrite(led,HIGH);
+             CAN.sendMsgBuf(0x05FF4004, 1, 8, stmp7);                                                                     //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+             digitalWrite(led,LOW);
+              Serial.println();
+              Serial.print("TRANSMIT : 05FF4004");
+            }
+        Serial.print("\t");
+        for(int i = 0; i<len; i++)                                                 // print the data
+          {
+            if( stmp7[i] < 0x10){ Serial.print("0");} Serial.print(stmp7[i],HEX);      // send a leading zero if only one digit
+            Serial.print(" ");                                                     // space to seperate bytes
+          }
+//        Serial.println();
+//        Serial.print("\t");
+//        for(int i = 0; i<len; i++)                                                 // print the data
+//          {
+//            if( stmp7[i] < 0x10){ Serial.print("0");} Serial.print(stmp7[i],HEX);      // send a leading zero if only one digit
+//            Serial.print(" ");                                                     // space to seperate bytes
+ //         }
+        Serial.print("\tImax set to : ");
+        Serial.print(0.1*(stmp7[0]+stmp7[1]*256));
+        Serial.print(" A\t");
+        Serial.print("Vout set to : ");
+        Serial.print(0.01*(stmp7[2]+stmp7[3]*256));
+        Serial.print(" V\t");
+        Serial.print("OVP set to : ");
+        Serial.print(0.01*(stmp7[6]+stmp7[7]*256));
+        Serial.print(" V\tWalkin : ");
+        if(longwalkin == HIGH)
+          {        
+             Serial.print("60 seconds");
+          }
+       else
+          {
+             Serial.print("5 seconds");
+          }
+       }
+
+
+    else if((canId==0x05014004)or(canId==0x05014008)or(canId==0x05014010)or(canId=0x0501400C))                        // these are the status messages (05014004 is not current-limiting, 05014008 is current limiting 05014010 = busy with walkin, 0501400C in input voltage low)
+      {  
+           Serial.print("\t");
+           Serial.print("Tin = ");
+           Serial.print(buf[0]);                                                        //first byte is temperature in (celcius)
+           Serial.print(" C\t");
+
+           Serial.print("Tout = ");
+           Serial.print(buf[7]);                                                        //last byte is temperature out (celcius)
+           Serial.print(" C\t");
+
+           Serial.print("Vin = ");          
+           Serial.print(buf[5]);                                                        // sixth byte is input voltage in volts ac/dc
+           Serial.print(" V\t");
+   
+           Serial.print("Iout = ");
+           Serial.print(buf[2]*256*0.1+buf[1]*0.1);                                     // third (msb) and second byte are current in 0.1A (deciamp) calculated to show directly in Amps
+           Serial.print(" A\t");
+       
+           Serial.print("Vout = ");
+           Serial.print(buf[4]*256*0.01+buf[3]*0.01);                                   // fifth (msb) and fourth byte are voltage in 0.01V (centivolt) calculated to show directly in Volts dc
+           Serial.print(" V\t");
+      
+           Serial.print("Pout = ");
+           Serial.print((2*buf[4]*256*0.01+2*buf[3]*0.01)*(buf[2]*256*0.1+buf[1]*0.1));     // Power is calculated from output voltage and current. Output is in Watts
+           Serial.print(" W\t");
+
+           msgreceived++;                                                                                             // record number of messages received
+           if(msgreceived>40)                                                                                     
+            {
+             msgreceived=0;
+               digitalWrite(led,HIGH);
+           CAN.sendMsgBuf(0x05004804, 1, 8, serialnr);                                                              //send message to log in every 40 messages (DO NOT USE ID NR, USE 00) this because during walk-in the 0500xxyy is not send and the rectifier "logs out" because of no received log-in messages from controller
+             digitalWrite(led,LOW);
+             Serial.println();
+             Serial.print("TRANSMIT : 05004804");
+             Serial.print("\t");
+             for(int i = 0; i<8; i++)                                                 // print the data
+               {
+                 if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+                 Serial.print(" ");                                                     // space to seperate bytes
+               }
+             Serial.print("\tover 40 messages : Log in with SrNr : ");
+             for(int i = 0; i<6; i++)                                                 // print the data
+               {
+                 if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+               }
+            msgreceived++;
+            }
+ 
+/*           lcd.setCursor(0, 0);                                                        //show data on the LCD screen 0x050140yy 0xAA 0xBB 0xCC 0xDD 0xEE 0xFF 0xGG 0xHH
+           lcd.print("T=");
+           lcd.print(buf[0]);                                                          // 0xAA = Temperature in
+           lcd.print("/");  
+           lcd.print(buf[7]);                                                          // 0xHH = Temperature out
+           lcd.print("   ");
+           lcd.setCursor(8,0);
+           lcd.print("I=");
+           lcd.print(buf[2]*256*0.1+buf[1]*0.1);                                       // 0xBB = Current Low Byte, 0xCC = Current High byte. Current in deciAmps (*0.1 Amps)
+           lcd.print("  ");
+              
+           lcd.setCursor(8,1);
+           lcd.print("Vo=");
+           lcd.print(buf[4]*256*0.01+buf[3]*0.01);                                     // 0xDD = Voltage out Low Byte, oxEE = Voltage out High Byte. Voltgae in centivolts (*0.01 Volt)
+           lcd.print("  ");
+                      
+           lcd.setCursor(0,1);
+           lcd.print("Vi=");          
+           lcd.print(256*buf[6]+buf[5]);                                               // 0xFF = Voltage in Low byte, 0xGG = Voltage in High byte. Voltage in Volts (because voltage is below 255 Volts, high byte is always 0)
+           lcd.print("  ");
+*/           
+           if((digitalRead(buttonup)==0))                                                    //read digital pin for button up and if it is low (pushbutton is pressed) 
+             {
+             maxcurrent = maxcurrent + currentstep;                                            // raise maxcurrent with 10 A
+             if(maxcurrent > 500)                                                      // to be able to lower the current with one button, if the maxcurrent > 50 the current is reset to 10
+               {
+               maxcurrent =100;
+               }
+               digitalWrite(led,HIGH);
+           CAN.sendMsgBuf(0x05004804, 1, 8, serialnr);                                                                  // send message to log in (DO NOT ASSIGN AN ID) use 00
+             digitalWrite(led,LOW);
+             Serial.println();
+        Serial.print("TRANSMIT : 05004804");
+        Serial.print("\t");
+       for(int i = 0; i<8; i++)                                                 // print the data
+          {
+            if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+            Serial.print(" ");                                                     // space to seperate bytes
+          }
+        Serial.print("\tLog in with SrNr : ");
+        for(int i = 0; i<6; i++)                                                 // print the data
+          {
+            if( serialnr[i] < 0x10){ Serial.print("0");} Serial.print(serialnr[i],HEX);      // send a leading zero if only one digit
+          }
+              unsigned char stmp7[8] = {lowByte(maxcurrent), highByte(maxcurrent), lowByte(outputvoltage), highByte(outputvoltage), lowByte(outputvoltage), highByte(outputvoltage), lowByte(overvoltage), highByte(overvoltage)};     // set rectifiers maxcurrent, outputvoltage and OVP and long walk-in 4005 or short walk in 4004
+             if(longwalkin == HIGH)
+               {        
+              digitalWrite(led,HIGH);
+                CAN.sendMsgBuf(0x05FF4005, 1, 8, stmp7);                                                                     //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+             digitalWrite(led,LOW);
+                 Serial.println();
+                 Serial.print("TRANSMIT : 05FF4005");
+               }
+             else
+               {
+                 digitalWrite(led,HIGH);
+             CAN.sendMsgBuf(0x05FF4004, 1, 8, stmp7);                                                                     //(last 4 in header is for 5 sec walkin, 5 is for 60 second walkin)
+             digitalWrite(led,LOW);
+                 Serial.println();
+                 Serial.print("TRANSMIT : 05FF4004");
+                }
+        Serial.print("\t");
+        for(int i = 0; i<len; i++)                                                 // print the data
+          {
+            if( stmp7[i] < 0x10){ Serial.print("0");} Serial.print(stmp7[i],HEX);      // send a leading zero if only one digit
+            Serial.print(" ");                                                     // space to seperate bytes
+          }
+        Serial.print("\tButton pressed : Imax set to : ");
+        Serial.print(0.1*(stmp7[0]+stmp7[1]*256));
+        Serial.print(" A\t");
+        Serial.print("Vout set to : ");
+        Serial.print(0.01*(stmp7[2]+stmp7[3]*256));
+        Serial.print(" V\t");
+        Serial.print("OVP set to : ");
+        Serial.print(0.01*(stmp7[6]+stmp7[7]*256));
+        Serial.print(" V\tWalkin : ");
+        if(longwalkin == HIGH)
+          {        
+             Serial.print("60 seconds");
+          }
+       else
+          {
+             Serial.print("5 seconds");
+          }
+/*           lcd.setCursor(0, 0);                                                                                         // announce chosen current on LCD
+             lcd.print("Current set to  ");
+             lcd.setCursor(0, 1);
+             lcd.print(maxcurrent*0.1);
+             lcd.print(" Amp        ");
+*/             delay(1000);
+             }       
+      } 
+    else
+      {
+//        lcd.setCursor(0,0);                                                            // if the canId is unknown
+//        lcd.print(canId,HEX);                                                          // show the can Id and the message on the LCD
+//        lcd.setCursor(0,1);
+//        for(int i = 0; i<len; i++)                                                    
+//          {
+//          if( buf[i] < 0x10){ lcd.print("0");} lcd.print(buf[i],HEX);                  // send a leading zero if only one digit
+//          }
+        Serial.println("\tUNKNOWN COMMAND");
+//        delay(1000);                                                                   // show the message for 1 second and then continue
+      }
+    }
+    
+  }
+
+/*********************************************************************************************************
+  END FILE
+*********************************************************************************************************/
+
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7A 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.54 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7A 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.54 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 79 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.53 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7A 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.54 V	Pout = 0.00 W	
+Received : 05000820	1B 14 14 71 11 08 20 00 	Serial Number is : 141471110820
+TRANSMIT : 05004804	14 14 71 11 08 20 05 00 	Log in with SrNr : 141471110820
+TRANSMIT : 05FF4005	64 00 76 16 76 16 3E 17 	Imax set to : 10.00 A	Vout set to : 57.50 V	OVP set to : 59.50 V	Walkin : 60 seconds
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7E 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.58 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7A 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.54 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7A 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.54 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 79 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.53 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1C 00 00 7C 16 E4 00 2C 	Tin = 28 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7E 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.58 V	Pout = 0.00 W	
+Received : 05000820	1B 14 14 71 11 08 20 00 	Serial Number is : 141471110820
+TRANSMIT : 05004804	14 14 71 11 08 20 05 00 	Log in with SrNr : 141471110820
+TRANSMIT : 05FF4005	64 00 76 16 76 16 3E 17 	Imax set to : 10.00 A	Vout set to : 57.50 V	OVP set to : 59.50 V	Walkin : 60 seconds
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7E 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.58 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7F 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.59 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7E 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.58 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05000820	1B 14 14 71 11 08 20 00 	Serial Number is : 141471110820
+TRANSMIT : 05004804	14 14 71 11 08 20 05 00 	Log in with SrNr : 141471110820
+TRANSMIT : 05FF4005	64 00 76 16 76 16 3E 17 	Imax set to : 10.00 A	Vout set to : 57.50 V	OVP set to : 59.50 V	Walkin : 60 seconds
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7A 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.54 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7C 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.56 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7E 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.58 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7A 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.54 V	Pout = 0.00 W	
+Received : 05014004	1D 00 00 7F 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.59 V	Pout = 0.00 W	
+Received : 05000820	1B 14 14 71 11 08 20 00 	Serial Number is : 141471110820
+TRANSMIT : 05004804	14 14 71 11 08 20 05 00 	Log in with SrNr : 141471110820
+TRANSMIT : 05FF4005	64 00 76 16 76 16 3E 17 	Imax set to : 10.00 A	Vout set to : 57.50 V	OVP set to : 59.50 V	Walkin : 60 seconds
+Received : 05014004	1D 00 00 7A 16 E4 00 2C 	Tin = 29 C	Tout = 44 C	Vin = 228 V	Iout = 0.00 A	Vout = 57.54 V	Pout = 0.00 W
+
+Try to use the following commands.
+尝试使用以下命令。
+
+
+unsigned char setdefaultvolt[5] = {0x29, 0x15, 0x00, 0x88, 0x13}; //this is the command for setting the default output voltage 50v (0x1388 = 5000 Last two bytes, LSB first). 80 16 is the maximum voltage of 57.6 V
+无符号字符 setdefaultvolt[5] = {0x29, 0x15, 0x00, 0x88, 0x13}; //这是设置默认输出电压50v的命令（0x1388 = 5000 最后两个字节，LSB在前）。 80 16最大电压57.6V
+
+CAN.sendMsgBuf(0x05019C00, 1, 5, setdefaultvolt); //send message to set ouput voltage to all chargers connected to the CAN-bus
+CAN.sendMsgBuf(0x05019C00, 1, 5, setdefaultvolt); //发送消息以设置连接到CAN总线的所有充电器的输出电压
+
+
+That is what i've used to program the Flatpack
+这就是我用来对 Flatpack 进行编程的方法
+
+
+The code only sends the command once. After 12 seconds the flatpack will change to 50.0 Volt. Disconnect the power to the flatpack. wait a minute or so and switch it back on. It should be at 50 Volts from then on :D
+该代码仅发送命令一次。 12 秒后，扁平电池将变为 50.0 伏。断开扁平封装的电源。等待一分钟左右，然后重新打开它。从那时起它应该是 50 伏 :D
+
+For 60 seconds walkin instead of 5 seconds use : CAN.sendMsgBuf(0x05004805, 1, 8, login);
+对于 60 秒步行而不是 5 秒，请使用： CAN.sendMsgBuf(0x05004805, 1, 8, login);
+
+when loging in (4805 insted of 4804)
+登录时（4805 代替 4804）
+
+
+
+I have a 48VDC flatpack 2 HE 2000W version with Arduino and CANBUS shield. I have used the info in this forum to log in and control the rectifier to some degree. I have figured out how to get additional status info. If the rectifier sends
+我有一个 48VDC 扁平封装 2 HE 2000W 版本，带有 Arduino 和 CANBUS 扩展板。我已经使用这个论坛中的信息来登录并在某种程度上控制整流器。我已经弄清楚如何获取额外的状态信息。如果整流器发送
+
+
+CanID 0x05014004 + (Status data as previously described) then it is operating normally
+CanID 0x05014004 +（状态数据如前所述）则运行正常
+
+
+CanID 0x05014008 + (Status data as previously described) then it has a warning - remmie got this when in current limit mode which is a warning.
+CanID 0x05014008 +（状态数据如前所述）然后它有一个警告 - remmie 在电流限制模式下收到此警告，这是一个警告。
+
+
+CanID 0x0501400C + (Status data as previously described) then it has an alarm. remmie got this when mains failed which is an alarm.
+CanID 0x0501400C +（状态数据如前所述）则有警报。雷米在电源断电时收到此警报，这是一个警报。
+
+
+CanID 0x05014010 + (Status data as previously described) then it is in Walk in mode (as previously described).
+CanID 0x05014010 +（状态数据如前所述）则处于步入模式（如前所述）。
+
+
+If you then send the rectifier
+如果您随后发送整流器
+
+
+CanID 0x0501BFFC + data 0x08, 0x04, 0x00,
+CanID 0x0501BFFC + 数据 0x08、0x04、0x00、
+
+
+it will send you back
+它会把你送回来
+
+
+CanID 0x0501BFFC + data 0x0E, 0x04, 0x00, 0xYY, 0xZZ, 0x00, 0x00
+CanID 0x0501BFFC + 数据 0x0E、0x04、0x00、0xYY、0xZZ、0x00、0x00
+
+where each bit of YY relates to the following WARNINGS
+其中 YY 的每一位都与以下警告相关
+
+80 = Current limit 80 = 电流限制
+40 = low temp 40 = 低温
+20 = High temp 20 = 高温
+10 = Low Mains 10 = 低电源电压
+08 = High Mains 08 = 高电源
+04 = Mod Fail Secondary
+04 = 次要模组失败
+
+02 = Mod Fail Primary
+02 = 主要模组失败
+
+01 = OVS Lock Out
+01 = OVS 锁定
+
+and each bit of the of ZZ relates to the following WARNINGS
+ZZ 的每一位都与以下警告相关
+
+80 = Inner Volt 80 = 内伏
+40 = Fan3 Speed low
+40 = 风扇 3 速度低
+
+20 = Sub Mod1 fail
+20 = 子模块 1 失败
+
+10 = Fan2 Speed low
+10 = 风扇 2 速度低
+
+08 = Fan1 Speed low
+08 = 风扇 1 速度低
+
+04 = Mod Fail Secondary
+04 = 次要模组失败
+
+02 = Module fail 02 = 模块失败
+01 = Internal Voltage  01 = 内部电压
+
+if you send CanID 0x0501BFFC + data 0x08, 0x08, 0x00
+如果您发送 CanID 0x0501BFFC + 数据 0x08、0x08、0x00
+
+
+it will send you back
+它会把你送回来
+
+
+CanID 0x0501BFFC + data 0x0E, 0x08, 0x00, 0xYY, 0xZZ, 0x00, 0x00
+CanID 0x0501BFFC + 数据 0x0E、0x08、0x00、0xYY、0xZZ、0x00、0x00
+
+
+where each bit of YY relates to the following ALARMS
+其中 YY 的每一位与以下警报相关
+
+80 = Current limit 80 = 电流限制
+40 = low temp 40 = 低温
+20 = High temp 20 = 高温
+10 = Low Mains 10 = 低电源电压
+08 = High Mains 08 = 高电源
+04 = Mod Fail Secondary
+04 = 次要模组失败
+
+02 = Mod Fail Primary
+02 = 主要模组失败
+
+01 = OVS Lock Out
+01 = OVS 锁定
+
+and each bit of ZZ relates to the following ALARMS
+ZZ 的每一位都与以下警报相关
+
+80 = Inner Volt 80 = 内伏
+40 = Fan3 Speed low
+40 = 风扇 3 速度低
+
+20 = Sub Mod1 fail
+20 = 子模块 1 失败
+
+10 = Fan2 Speed low
+10 = 风扇 2 速度低
+
+08 = Fan1 Speed low
+08 = 风扇 1 速度低
+
+04 = Mod Fail Secondary
+04 = 次要模组失败
+
+02 = Module fail 02 = 模块失败
+01 = Internal Voltage  01 = 内部电压
+
+I don't think all the warnings and alarms are relevant to all rectifiers but it will help you to find out what is going on if the rectifier sends you a CanID 0x05014008 or 0x0501400C.
+我认为并非所有警告和警报都与所有整流器相关，但如果整流器向您发送 CanID 0x05014008 或 0x0501400C，它将帮助您了解发生了什么情况。
+
+
+I have also found ways to get other status info like firmware versions, max current, max voltage, converter part number, converter type etc but these are not that interesting.
+我还找到了获取其他状态信息的方法，例如固件版本、最大电流、最大电压、转换器部件号、转换器类型等，但这些并不是那么有趣。
+
+
+
+Would anyone know how you can individually control the rectifiers or turn the output off on a specific rectifier? Remmie has showed how to send a broadcast to all rectifiers using canID 0x5FF4004, but I want to be able to control individual rectifiers and turn their output off if not required.
+有人知道如何单独控制整流器或关闭特定整流器的输出吗？ Remmie 展示了如何使用 canID 0x5FF4004 向所有整流器发送广播，但我希望能够控制各个整流器并在不需要时关闭其输出。
+
+
+Any ideas? 有什么想法吗？
+

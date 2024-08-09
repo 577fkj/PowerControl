@@ -1,0 +1,330 @@
+Some weird news.. . 一些奇怪的消息...
+Found out 23th July 2024
+2024 年 7 月 23 日发现
+
+The r48-1000e3, the R48-2000e3 built before 2020 and the R48-3500e3 can only be set permanent voltage (offline voltage) between 48-58V.
+2020年之前生产的R48-1000e3、R48-2000e3和R48-3500e3只能设置永久电压（离线电压）在48-58V之间。
+
+42-48 is only possible with online voltage, there the can data has to be repeated every 30 seconds.
+42-48 仅适用于在线电压，其中罐头数据必须每 30 秒重复一次。
+
+
+The R48-2000e3 built 2020 and 2022 can be set permanent (offline) from 41-58,5V .
+2020 年和 2022 年生产的 R48-2000e3 可在 41-58,5V 范围内设置永久（离线）。
+
+
+
+
+Was also working on the can code for the Emerson Vertiv rectifiers.
+还致力于艾默生 Vertiv 整流器的 CAN 代码。
+
+The following was tested on the R48-2000e3 built 2020.
+以下是在 2020 年生产的 R48-2000e3 上进行的测试。
+
+
+Most of the commands are picked up from an emerson 820 controller. A few commands like permanent settings where found by try and error.
+大多数命令是从艾默生 820 控制器获取的。一些命令（例如永久设置）是通过尝试和错误找到的。
+
+
+Frame ID 06080783 or 0607FF83 speed 125kB/s
+帧 ID 06080783 或 0607FF83 速度 125kB/s
+
+All the voltage values (42 50 00 00 = 52,5V) are floating point to hex converted.
+所有电压值 (42 50 00 00 = 52,5V) 均已从浮点转换为十六进制。
+
+
+offline commands are permanent stored values
+离线命令是永久存储的值
+
+online commands are lost after 30 seconds , or after restart
+在线命令在30秒后或重启后丢失
+
+
+To change the output voltage permanently you better send two messages with the same voltage value, otherwise you don´t see the changes immediately
+要永久更改输出电压，您最好发送两条具有相同电压值的消息，否则您不会立即看到更改
+
+CAN-ID 06 07 FF 83
+CAN-ID 06 07 FF 83
+
+1. Data 03 F0 00 21 42 50 00 00 online-voltage value gets lost after 30 seconds , just to see the changes
+1.数据03 F0 00 21 42 50 00 00在线电压值30秒后丢失，仅查看变化
+
+2. Data 03 F0 00 24 42 50 00 00 offline voltage Setting Voltage permanent to 52,5V
+2. 数据 03 F0 00 24 42 50 00 00 离线电压 设置电压永久为 52,5V
+
+this works between 42 24 00 00 min 41V and 42 6A 00 00 max 58,5V
+这在 42 24 00 00 最小 41V 和 42 6A 00 00 最大 58,5V 之间工作
+
+You can also only send the offline value command, but then you have to wait 30 seconds until the rectifier changes the voltages.
+您也可以只发送离线值命令，但随后您必须等待 30 秒，直到整流器改变电压。
+
+
+
+The output current is set in percent to the rated value of the rectifier written in the manual. Possible settings 0,1-1,21 equals 10%-121% also float to hex converted. The rated current written in the datasheet is 121%.
+输出电流以手册中记载的整流器额定值的百分比设置。可能的设置 0,1-1,21 等于 10%-121% 也将浮点数转换为十六进制。数据表上写的额定电流是121%。
+
+If hooked to an electronic load the rectifier works down to 20V and lower.
+如果连接到电子负载，整流器的工作电压可降至 20V 及更低。
+
+On a resivitve 10Ohm load the rectifier needs from start about 30-40 seconds until the values are stable, inbetween it takes a few cylces of overshooting and undershooting the target current, which was in this case set between12-15%.
+在电阻 10 欧姆负载上，整流器从启动需要大约 30-40 秒，直到值稳定，在此期间需要几个周期的过冲和下冲目标电流，在本例中设置在 12-15% 之间。
+
+
+03 F0 00 19 3D CC CC CD = 0,1 = 10% of the rated current
+03 F0 00 19 3D CC CC CD = 0,1 = 额定电流的 10%
+
+03 F0 00 19 3F 9A E1 48 = 1,21 = 121% of the rated current
+03 F0 00 19 3F 9A E1 48 = 1,21 = 额定电流的 121%
+
+
+if you want to see the changes faster you have to set the online value to, otherwhise it takes 30 seconds until the change will start, same behavior as with the permanent voltage setting
+如果您想更快地看到变化，您必须将在线值设置为，否则需要 30 秒才能开始变化，与永久电压设置的行为相同
+
+online 03 F0 00 22 3D CC CC CD 10%
+在线 03 F0 00 22 3D CC CC CD 10%
+
+online 03 F00 00 22 3F 9A E1 48 121%
+在线 03 F00 00 22 3F 9A E1 48 121%
+
+offline 03 F0 00 19 3D CC CC CD 10%
+离线 03 F0 00 19 3D CC CC CD 10%
+
+Offline 03 F00 00 19 3F 9A E1 48 121%
+离线 03 F00 00 19 3F 9A E1 48 121%
+
+
+
+Walk in >> Time to ramp up the rectifiers output voltage to the set voltage value
+步入 >> 将整流器输出电压提升至设定电压值的时间
+
+Walk in on 03 F0 00 32 00 01 00 00
+走进 03 F0 00 32 00 01 00 00
+
+Walk in off 03 F0 00 32 00 00 00 00
+走进去 03 F0 00 32 00 00 00 00
+
+walk in time 03 F0 00 29 44 7A 00 00 = 10 Seconds
+步行时间 03 F0 00 29 44 7A 00 00 = 10 秒
+
+walk in time 03 F0 00 29 45 FF 00 00 = 70 seconds
+步行时间 03 F0 00 29 45 FF 00 00 = 70 秒
+
+
+AC input current limit, called Diesel power limit, that gives the possibility to reduce the overall power of the rectifier
+交流输入电流限制，称为柴油功率限制，可以降低整流器的总功率
+
+03 F0 00 1A 40 A0 00 00 AC-input current is held at 5A
+03 F0 00 1A 40 A0 00 00 交流输入电流保持在 5A
+
+floating point to hex conversion 40 A0 00 00 = 5
+浮点到十六进制转换 40 A0 00 00 = 5
+
+
+fan speed 风扇速度
+full speed 03 F0 00 33 00 01 00 00
+全速 03 F0 00 33 00 01 00 00
+
+auto 03 F0 00 33 00 00 00 00
+自动 03 F0 00 33 00 00 00 00
+
+below 51V fan starts to ramp up regardless of current , under 42V fan runs on full speed
+无论电流如何，低于 51V 的风扇都会开始加速，低于 42V 的风扇全速运行
+
+
+restart after overvoltage
+过压后重新启动
+
+on 03 F0 00 39 00 01 00 00
+上 03 F0 00 39 00 01 00 00
+
+off 03 F0 00 39 00 00 00 00
+关 03 F0 00 39 00 00 00 00
+
+
+
+
+online commands working only when permanently send via CAN (every 15 seconds)
+在线命令仅在通过 CAN 永久发送时有效（每 15 秒一次）
+
+float charge voltage 浮充电压
+03 F0 00 21 42 48 00 00 = 50V floating point to hex conversion 42 48 00 00 = 50.0V
+03 F0 00 21 42 48 00 00 = 50V 浮点到十六进制转换 42 48 00 00 = 50.0V
+
+min 03 F0 00 21 42 24 00 00 = 41V
+分钟 03 F0 00 21 42 24 00 00 = 41V
+
+max 03 F0 00 21 42 6A 00 00 = 58.5V
+最大 03 F0 00 21 42 6A 00 00 = 58.5V
+
+
+DC current Control 直流电流控制
+DC-Output on 03 F0 00 30 00 00 00 00
+直流输出 03 F0 00 30 00 00 00 00
+
+DC-Output off 03 F0 00 30 00 01 00 00
+直流输出关闭 03 F0 00 30 00 01 00 00
+
+
+03 F0 00 22 3D CC CC CD = 0,1 = 10% of the rated current
+03 F0 00 22 3D CC CC CD = 0,1 = 额定电流的 10%
+
+03 F0 00 22 3F 9A E1 48 = 1,21 = 121% of the rated current
+03 F0 00 22 3F 9A E1 48 = 1,21 = 额定电流的 121%
+
+
+If something is wrong or you found out other things feel free to ad.
+如果有什么问题或者您发现其他事情，请随时发布广告。
+
+This was my first real working on a CAN-BUS System, so my summary is far from perfect. 😉
+这是我第一次真正从事 CAN-BUS 系统的工作，所以我的总结远非完美。 😉
+
+
+
+
+
+
+The rectifier sends Data on 060F8007
+整流器在060F8007上发送数据
+
+But I have not veryfied them, I have them noted during my trace from the 820M
+但我还没有确认它们，我在 820M 的跟踪过程中记下了它们
+
+00 F0 00 80 46 A5 34 00 is perhaps for the query. Maybe someone else can check this and report, as I have no time to do this at the moment and during the next weeks
+00 F0 00 80 46 A5 34 00 可能用于查询。也许其他人可以检查并报告，因为我目前和接下来的几周没有时间这样做
+
+
+
+41F00001 42 56 0D 00 53,51V Volt output
+41F00001 42 56 0D 00 53,51V 电压输出
+
+41F00002 00 00 00 00 0A Current output
+41F00002 00 00 00 00 0A 电流输出
+
+41F00004 41 A8 32 00 21,02 C Temp
+41F00004 41 A8 32 00 21,02°C 温度
+
+41F00005 43 68 E4 40 232,89V Input voltage
+41F00005 43 68 E4 40 232,89V 输入电压
+
+
+
+I have tested with the R48-1000E4 the R48-2000e3 and the R48-3500e and all listen to 06 07 FF 84.
+我已经用 R48-1000E4、R48-2000e3 和 R48-3500e 进行了测试，并且都听 06 07 FF 84。
+
+
+For reading I'm not shure which query, as I had no need for any values from the rectifier. I do only set voltage and output current or input current, and then let it charge batteries.
+对于阅读，我不确定哪个查询，因为我不需要来自整流器的任何值。我只设置电压和输出电流或输入电流，然后让它给电池充电。
+
+
+There is no command to increase output or input current step by step. You have to send a new limit to change something.
+没有逐步增加输出或输入电流的命令。您必须发送新的限制才能更改某些内容。
+
+The value has to be converted floating point to hex. I use this converter IEEE754 converter
+该值必须转换为浮点数为十六进制。我用的是这个转换器IEEE754转换器
+https://www.h-schmidt.net/FloatConverter/IEEE754.html
+
+just enter 0.1 and you will get the corresponding hex value.
+只需输入0.1，您就会得到相应的十六进制值。
+
+
+03 F0 00 19 3D CC CC CD = 0,1 = 10% of the rated output current
+03 F0 00 19 3D CC CC CD = 0,1 = 额定输出电流的 10%
+
+03 F0 00 19 3F 9A E1 48 = 1,21 = 121% of the rated output current which is equal to the maximum current of the rectifier
+03 F0 00 19 3F 9A E1 48 = 1,21 = 额定输出电流的 121%，等于整流器的最大电流
+
+
+I do not know a command for factory reset.
+我不知道恢复出厂设置的命令。
+
+But two hours ago in another forum someone has written when you send to ID 0607FF83
+但是两个小时前在另一个论坛上有人写了当你发送到 ID 0607FF83
+
+Data 00000000 then the vertiv will give you measured values.
+数据 00000000 然后 vertiv 将为您提供测量值。
+
+The values you see underneath are sent at once , and are without any load.
+您在下面看到的值是立即发送的，并且没有任何负载。
+
+So it is possible that 41 F0 00 03 is power, but I have not veryfied it.
+所以41 F0 00 03可能是电源，但我还没有确认。
+
+
+vertiv 00 00 00 00.JPG
+
+Direct request for one value is
+直接请求一个值是
+
+ID 06 00 07 83
+身份证号 06 00 07 83
+
+Data 01 F0 00 xx 00 00 00 00 00 ______xx is for the requested value
+数据 01 F0 00 xx 00 00 00 00 00 ______xx 用于请求的值
+
+You see all the values listed in the screenshot above. But I have not checked which value is for what.
+您会看到上面屏幕截图中列出的所有值。但我还没有检查哪个值是什么。
+
+i guess 我猜
+01 = output voltage (52.25V)
+01=输出电压（52.25V）
+
+02
+03
+04 = temperature (21.3C) 04=温度（21.3℃）
+05
+07
+40
+54
+58
+
+
+
+To read from the R48
+从 R48 读取
+
+
+Send to 06000783 => 01 F0 00 xx 00 00 00 00 xx = measurement No.
+发送至 06000783 => 01 F0 00 xx 00 00 00 00 xx = 测量编号
+
+Response from 060F8003 <= 41 F0 00 xx yy yy yy yy xx = measurement No. yy yy yy yy = value
+060F8003 <= 41 F0 00 xx yy yy yy yy xx = 测量编号的响应 yy yy yy yy = 值
+
+EDIT - corrected the response address
+编辑- 更正了响应地址
+
+
+xx =
+01 = output voltage 01=输出电压
+02 = output current 02=输出电流
+03 = output current limit
+03 = 输出电流限制
+
+04 = temperature in C
+04 = 温度（C）
+
+05 = supply voltage 05 = 电源电压
+06 =
+07 =
+08 =
+09 =
+
+
+The commands I have used
+我使用过的命令
+
+Voltaj 54V​ 电压 54V​
+03 F0 00 24 42 57 00 00​
+Curent 90%​ 目前90%​
+03 F0 00 19 3F 66 66 66​
+Curent 95%​ 目前95%​
+03 F0 00 19 3F 73 33 33​
+Walk in on (activare)​ 走进（activare）​
+03 F0 00 32 00 01 00 00​
+Walk in off (dezactivare)​
+走进去（dezactivare）​
+03 F0 00 32 00 00 00 00​
+Walk in time 10 sec​
+步行时间10秒​
+03 F0 00 29 44 7A 00 00​
+Fan speed auto​ 风扇自动调速​
+03 F0 00 33 00 00 00 00​
