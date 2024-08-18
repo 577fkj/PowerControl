@@ -1,0 +1,57 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: R4850G2 BatteryManager
+
+
+BO_ 2424389759 ResponseData: 8 R4850G2
+ SG_ Command M : 8|8@1+ (1,0) [0|0] ""  BatteryManager
+ SG_ InputPower m112 : 32|32@1+ (0.0009765625,0) [0|0] "W"  BatteryManager
+ SG_ InputFrequency m113 : 32|32@1+ (0.0009765625,0) [0|0] "Hz"  BatteryManager
+ SG_ InputVoltage m120 : 32|32@1+ (0.0009765625,0) [0|0] "V"  BatteryManager
+
+BO_ 2424324350 RequestData: 1 BatteryManager
+ SG_ RequestData : 0|8@1+ (1,0) [0|0] ""  R4850G2
+
+BO_ 2424406270 SetDAta: 8 BatteryManager
+ SG_ WriteCommand M : 0|16@1+ (1,0) [0|0] ""  R4850G2
+ SG_ OnlineOutputVoltage m256 : 32|32@1+ (1020,0) [42330|59670] "V"  R4850G2
+
+
+
+CM_ BU_ R4850G2 "Power Supply";
+CM_ BU_ BatteryManager "Battery Manager";
+VAL_ 2424389759 Command 112 "InputPower" 113 "Input Frequency" 114 "Input Current" 115 "Output Power" ;
+
