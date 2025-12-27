@@ -24,14 +24,30 @@
 #define MAX_CURRENT_OFFSET 20.0
 #define RATIO_OFFSER 1024.0
 
+
+/**
+https://github.com/patagonaa/huawei-r48xx#can-id
+Interpretation:
+Bits: 000a aaaa abbb bbbb cccc cccc deee eefg
+    0 (bit 31-29): always zero (CAN ID is 29-bit)
+    a (bit 28-23): protocol ID (always 21)
+    b (bit 22-16): address (0 = broadcast, 1 = first, ...)
+    c (bit 15-8): command id
+    d (bit 7): message source (0 = from PSU, 1 = to PSU)
+    e (bit 6-2): group mask (always 1F)
+    f (bit 1): hardware / software address (0 = hw, 1 = sw, always 1)
+    g (bit 0): finished marker (0 = finished, 1 = more data coming)
+*/
+
 typedef struct
 {
-    uint8_t protoId;
-    uint8_t addr;
-    uint8_t cmdId;
-    uint8_t fromSrc;
-    uint8_t rev;
-    uint8_t count;
+    uint8_t protoId;   // bits 28-23
+    uint8_t addr;      // bits 22-16 (0x00: broadcast, 0x01: PSU 1, 0x02: PSU 2, ...)
+    uint8_t cmdId;     // bits 15-8
+    uint8_t fromSrc;   // bits 7     (0: from PSU, 1: to PSU)
+    uint8_t groupMask; // bits 6-2   (always 0x1F)
+    uint8_t addrType;  // bits 1     (0: hw address, 1: sw address, always 1)
+    uint8_t finished;  // bits 0     (0: finished, 1: more data coming)
 } HuaweiEAddr;
 
 typedef enum

@@ -129,25 +129,42 @@ void app_module_info_set_info(void *data, void *user_data)
 // char *HuaweiEAddr_to_string(const HuaweiEAddr *self)
 // {
 //     char result[80];
-//     snprintf(result, 80, "protoId: 0x%02X, addr: 0x%02X, cmdId: 0x%02X, fromSrc: 0x%02X, rev: 0x%02X, count: 0x%02X",
-//              self->protoId, self->addr, self->cmdId, self->fromSrc, self->rev, self->count);
+//     sprintf(result,
+//             "HuaweiEAddr { protoId: %u, addr: %u, cmdId: %u, fromSrc: %u, groupMask: %u, addrType: %u, finished: %u }",
+//             self->protoId,
+//             self->addr,
+//             self->cmdId,
+//             self->fromSrc,
+//             self->groupMask,
+//             self->addrType,
+//             self->finished);
 //     return result;
 // }
 
 uint32_t HuaweiEAddr_pack(const HuaweiEAddr *self)
 {
-    return ((uint32_t)self->protoId << 23) | ((uint32_t)self->addr << 16) | ((uint32_t)self->cmdId << 8) |
-           ((uint32_t)self->fromSrc << 7) | ((uint32_t)self->rev << 1) | ((uint32_t)self->count);
+    uint32_t can_id = 0;
+
+    can_id |= ((uint32_t)(self->protoId   & 0x3F)) << 23;
+    can_id |= ((uint32_t)(self->addr      & 0x7F)) << 16;
+    can_id |= ((uint32_t)(self->cmdId     & 0xFF)) << 8;
+    can_id |= ((uint32_t)(self->fromSrc   & 0x01)) << 7;
+    can_id |= ((uint32_t)(self->groupMask & 0x1F)) << 2;
+    can_id |= ((uint32_t)(self->addrType  & 0x01)) << 1;
+    can_id |= ((uint32_t)(self->finished  & 0x01));
+
+    return can_id & 0x1FFFFFFF;
 }
 
 void HuaweiEAddr_unpack(HuaweiEAddr *self, uint32_t val)
 {
-    self->protoId = (val >> 23) & 0x3F;
-    self->addr = (val >> 16) & 0x7F;
-    self->cmdId = (val >> 8) & 0xFF;
-    self->fromSrc = (val >> 7) & 0x01;
-    self->rev = (val >> 1) & 0x3F;
-    self->count = val & 0x01;
+    self->protoId =   (val >> 23) & 0x3F;
+    self->addr =      (val >> 16) & 0x7F;
+    self->cmdId =     (val >> 8)  & 0xFF;
+    self->fromSrc =   (val >> 7)  & 0x01;
+    self->groupMask = (val >> 2)  & 0x1F;
+    self->addrType =  (val >> 1)  & 0x01;
+    self->finished =   val        & 0x01;
 }
 
 void huawei_r48xx_send_get_data()
@@ -157,8 +174,9 @@ void huawei_r48xx_send_get_data()
         .addr = 0x00,
         .cmdId = HUAWEI_R48XX_MSG_DATA_ID,
         .fromSrc = 0x01,
-        .rev = 0x3F,
-        .count = 0x00,
+        .groupMask = 0x1F,
+        .addrType = 0x01,
+        .finished = 0x00,
     };
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     can_send(HuaweiEAddr_pack(&addr), data, 8);
@@ -171,8 +189,9 @@ void send_get_info()
         .addr = 0x00,
         .cmdId = HUAWEI_R48XX_MSG_INFO_ID,
         .fromSrc = 0x01,
-        .rev = 0x3F,
-        .count = 0x00,
+        .groupMask = 0x1F,
+        .addrType = 0x01,
+        .finished = 0x00,
     };
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     can_send(HuaweiEAddr_pack(&addr), data, 8);
@@ -185,8 +204,9 @@ void send_get_desc()
         .addr = 0x00,
         .cmdId = HUAWEI_R48XX_MSG_DESC_ID,
         .fromSrc = 0x01,
-        .rev = 0x3F,
-        .count = 0x00,
+        .groupMask = 0x1F,
+        .addrType = 0x01,
+        .finished = 0x00,
     };
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     can_send(HuaweiEAddr_pack(&addr), data, 8);
@@ -199,8 +219,9 @@ void set_reg(uint8_t reg, uint16_t val)
         .addr = 0x01, // 0x00 广播，电源不会回复
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
-        .rev = 0x3F,
-        .count = 0x00,
+        .groupMask = 0x1F,
+        .addrType = 0x01,
+        .finished = 0x00,
     };
     uint8_t data[8] = {0x01, reg, 0x00, 0x00, 0x00, 0x00, (val >> 8) & 0xFF, val & 0xFF};
     can_send(HuaweiEAddr_pack(&addr), data, 8);
@@ -213,8 +234,9 @@ void power_off()
         .addr = 0x01, // 0x00 广播，电源不会回复
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
-        .rev = 0x3F,
-        .count = 0x00,
+        .groupMask = 0x1F,
+        .addrType = 0x01,
+        .finished = 0x00,
     };
     uint8_t data[8] = {0x01, 0x32, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
     can_send(HuaweiEAddr_pack(&addr), data, 8);
@@ -227,8 +249,9 @@ void power_on()
         .addr = 0x01, // 0x00 广播，电源不会回复
         .cmdId = HUAWEI_R48XX_MSG_CONTROL_ID,
         .fromSrc = 0x01,
-        .rev = 0x3F,
-        .count = 0x00,
+        .groupMask = 0x1F,
+        .addrType = 0x01,
+        .finished = 0x00,
     };
     uint8_t data[8] = {0x01, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     can_send(HuaweiEAddr_pack(&addr), data, 8);
@@ -425,7 +448,7 @@ void huawei_r48xx_can_data_handle(uint32_t can_id, uint8_t *can_data)
         }
         uint16_t offset = (count - 1) * 6;
         memcpy(power_info.desc + offset, can_data + 2, 6);
-        if (!h_data.count)
+        if (!h_data.finished)
         {
             power_info.desc[offset + 1] = 0x00;
             call_ack(HUAWEI_DESC_ACK, power_info.desc);
